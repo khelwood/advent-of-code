@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from utils import Point
+from point import Point
 
 MAZE_SEED = 1352
 DEST = Point(31,39)

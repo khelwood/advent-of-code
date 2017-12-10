@@ -3,7 +3,7 @@
 import sys
 
 from hashlib import md5
-from utils import Point
+from point import Point
 from collections import namedtuple
 
 PASSCODE = 'lpvhkcbi'
