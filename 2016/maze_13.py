@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
+sys.path.append('..')
+
 from point import Point
 
 MAZE_SEED = 1352

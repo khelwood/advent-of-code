@@ -2,6 +2,8 @@
 
 import sys
 
+sys.path.append('..')
+
 from hashlib import md5
 from point import Point
 from collections import namedtuple
