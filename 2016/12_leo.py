@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 import re
-import clip
+import sys
 
 def _compile(x):
     return re.compile('^'+x.replace(' ',r'\s+').replace('#',r'([\w-]+)')+'$')
@@ -16,6 +16,9 @@ def _match(ptn, line):
 COPY_PTN = _compile('cpy # #')
 ALTER_PTN = _compile('(inc|dec) #')
 JUMP_PTN = _compile('jnz # #')
+
+def isnum(x):
+    return x.startswith('-') or x.isdigit()
 
 class Program:
     def __init__(self, lines):
@@ -42,25 +45,35 @@ class Program:
         m = _match(COPY_PTN, line)
         src = m.group(1)
         dst = m.group(2)
-        self[dst] = self[src]
+        if isnum(dst):
+            sys.stderr.write("skipping %r"%line)
+        else:
+            self[dst] = self[src]
         self.advance()
     def process_update(self, line):
         m = _match(ALTER_PTN, line)
         delta = (1 if line.startswith('inc') else -1)
         dst = m.group(2)
-        self[dst] += delta
+        if isnum(dst):
+            sys.stderr.write("skipping %r"%line)
+        else:
+            self[dst] += delta
         self.advance()
     def process_jump(self, line):
         m = _match(JUMP_PTN, line)
         src = m.group(1)
         dst = m.group(2)
         if self[src]:
-            if self[dst]==-2 and self.unwrap(src, self.position-2):
+            if dst.startswith('-') and self.unwrap(src, int(dst)):
                 return self.advance()
             self.advance(self[dst])
         else:
             self.advance()
-    def unwrap(self, src, start):
+    def unwrap(self, src, delta):
+        if delta==-2 and self.unwrap_two(src, self.position-2):
+            return True
+        return False
+    def unwrap_two(self, src, start):
         """If we have a loop of two updates, we can
         compute the outcome without having to run the whole thing."""
         ms = [ALTER_PTN.match(self.lines[start+i]) for i in range(2)]
@@ -82,10 +95,8 @@ class Program:
             self.process(self.lines[self.position])
 
 def main():
-    print("Press enter to paste.")
-    input()
-    block = clip.paste()
-    lines = block.strip().split('\n')
+    data = sys.stdin.read().strip()
+    lines = data.split('\n')
     prog = Program(lines)
     # PART 2:
     prog['c'] = 1
