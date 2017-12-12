@@ -23,10 +23,12 @@ class Grid(object):
         cp._height = self.height
         cp._data = self._data[:]
         return cp
-    def len(self):
+    def __len__(self):
         return len(self._data)
     def __iter__(self):
-        return iter(self._data)
+        for y in range(self.height):
+            for x in range(self.width):
+                yield Point(x,y)
     def _toindex(self, x,y=None):
         if y is None:
             x,y = x
