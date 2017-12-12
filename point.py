@@ -60,9 +60,13 @@ class Point(tuple):
         return p if isinstance(p,cls) else cls(p[0], p[1])
     @classmethod
     def max(cls, *p):
+        if len(p)==1:
+            p = p[0]
         return cls(max(i[0] for i in p), max(i[1] for i in p))
     @classmethod
     def min(cls, *p):
+        if len(p)==1:
+            p = p[0]
         return cls(min(i[0] for i in p), min(i[1] for i in p))
     @classmethod
     def abs(cls, p):
@@ -90,3 +94,5 @@ if __name__ == '__main__':
     assert Point.min(p, -p)==-p
     assert Point.max(p, -p)==p
     assert p%2==(1,0)
+    assert Point.max([p,-p])==p
+    assert Point.min([p,-p])==-p
