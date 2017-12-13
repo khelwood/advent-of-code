@@ -63,12 +63,12 @@ def combine_markers(pieces, pos, reach):
         total_mass += mass(piece)
     return total_mass
 
+def reverse_enumerate(items):
+    return zip(range(len(items)-1, -1, -1), reversed(items))
+
 def complex_decompress_length(data):
     pieces = extract_pieces(data)
-    i = len(pieces)
-    while i > 0:
-        i -= 1
-        cur = pieces[i]
+    for i, cur in reverse_enumerate(pieces):
         if mass(cur) is None:
             m = combine_markers(pieces, i, cur.reach)
             cur.mass = (cur.repeats-1) * m
