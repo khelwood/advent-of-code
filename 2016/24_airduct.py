@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 
 import sys
+import itertools
+
 sys.path.append('..')
 
 from point import Point
 from grid import Grid
-import itertools
 
-DIRECTIONS = (Point(1,0), Point(0,1), Point(-1,0), Point(0,-1))
-RIGHT,DOWN,LEFT,UP = DIRECTIONS
 
 def build_maze(lines):
     maze = Grid(len(lines[0]), len(lines), '.')
-    targets = [None]*10
+    targets = {}
     last = 0
     for y,line in enumerate(lines):
         for x,ch in enumerate(line):
@@ -21,18 +20,20 @@ def build_maze(lines):
                 n = int(ch)
                 last = max(last, n)
                 targets[n] = Point(x,y)
-    maze.start = targets[0]
-    maze.targets = tuple(targets[1:last+1])
-    maze[maze.start] = '.' # Make sure 0 is revisitable
+    maze.targets = tuple(targets[i] for i in range(last+1))
     return maze
 
-def travel(maze, start, end, cache={}):
-    """Travel from start to end in the least number of moves."""
-    key = (start, end)
-    value = cache.get(key)
-    if value is None:
-        cache[key] = value = find_travel_distance(maze, start, end)
-    return value
+def find_distances(maze):
+    n = len(maze.targets)
+    distances = {}
+    for si, ei in itertools.combinations(range(n), 2):
+        start = maze.targets[si]
+        end = maze.targets[ei]
+        distance = find_travel_distance(maze, start, end)
+        distances[si,ei] = distances[ei,si] = distance
+        print('.',end='',flush=True)
+    print()
+    return distances
 
 def find_travel_distance(maze, start, end):
     if start==end:
@@ -57,12 +58,12 @@ def directions(pos, end):
     diff = end-pos
     if abs(diff.x)+abs(diff.y)==1:
         return (diff,)
-    x1,x2 = (RIGHT,LEFT) if diff.x>1 else (LEFT,RIGHT)
-    y1,y2 = (DOWN,UP) if diff.y>1 else (UP,DOWN)
+    x1 = Point(1 if diff.x>1 else -1, 0)
+    y1 = Point(0, 1 if diff.y>1 else -1)
     if abs(diff.x) >= abs(diff.y):
-        return (x1,y1,y2,x2)
+        return (x1,y1,-y1,-x1)
     else:
-        return (y1,x1,x2,y2)
+        return (y1,x1,-x1,-y1)
 
 def step_towards_end(maze, pos, end, next_pos, visited):
     for step in directions(pos, end):
@@ -71,7 +72,7 @@ def step_towards_end(maze, pos, end, next_pos, visited):
             next_pos.append(end)
             visited.add(end)
             return True
-        if new_pos not in maze or new_pos in visited or maze[new_pos]!='.':
+        if new_pos not in maze or new_pos in visited or maze[new_pos]=='#':
             continue
         next_pos.append(new_pos)
         visited.add(new_pos)
@@ -79,13 +80,11 @@ def step_towards_end(maze, pos, end, next_pos, visited):
             break
     return False
 
-def steps_for_permutation(maze, start, perm):
-    #print("Trying", perm)
+def steps_for_permutation(distances, perm, start=0):
     cur = start
     total = 0
     for target in perm:
-        #print("Travelling to", target)
-        steps = travel(maze, cur, target)
+        steps = distances[cur, target]
         if steps is None:
             return None
         total += steps
@@ -94,17 +93,19 @@ def steps_for_permutation(maze, start, perm):
 
 def main():
     maze = build_maze(sys.stdin.read().strip().split('\n'))
-    print(maze.targets)
+    print("Finding distances between targets ", end='', flush=True)
+    distances = find_distances(maze)
     best = None
-    for perm in itertools.permutations(maze.targets):
-        c = steps_for_permutation(maze, maze.start, perm)
+    sequence = range(1, len(maze.targets))
+    for perm in itertools.permutations(sequence):
+        c = steps_for_permutation(distances, perm)
         if c and (not best or best > c):
             best = c
     print("Steps required:", best)
     # Part 2: end by visiting 0
     best = None
-    for perm in itertools.permutations(maze.targets):
-        c = steps_for_permutation(maze, maze.start, perm+(maze.start,))
+    for perm in itertools.permutations(sequence):
+        c = steps_for_permutation(distances, perm+(0,))
         if c and (not best or best > c):
             best = c
     print("Steps required, returning to start:", best)
