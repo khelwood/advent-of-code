@@ -5,7 +5,6 @@ sys.path.append('..')
 
 from point import Point
 
-MAZE_SEED = 1352
 DEST = Point(31,39)
 START = Point(1,1)
 
@@ -83,7 +82,10 @@ def find_next_moves(current_pos, next_pos, seen):
                 seen.add(n)
         
 def main():
-    draw_maze(10,10)
+    global MAZE_SEED
+    if len(sys.argv)<=1:
+        exit("Usage: %s <maze-seed>"%sys.argv[0])
+    MAZE_SEED = int(sys.argv[1])
     moves = 1
     seen = {START}
     current_pos = [START]
@@ -93,7 +95,7 @@ def main():
         print(f' (Moves: {moves}, visited: {len(seen)})   ', end='\r')
         current_pos = next_pos
         next_pos = []
-    print(f'Moves: {moves}'.ljust(70))
+    print(f'Steps to target: {moves}'.ljust(70))
     max_moves = 50
     moves = 0
     seen = {START}
@@ -104,8 +106,8 @@ def main():
         find_next_moves(current_pos, next_pos, seen)
         current_pos = next_pos
         next_pos = []
-    print(f"Places in range: {len(seen)}")
-    m = Point.max(*seen)
+    print(f"Places within {max_moves} steps: {len(seen)}\n")
+    m = Point.max(seen)
     draw_maze(m.x+2,m.y+2,seen)
 
 if __name__ == '__main__':
