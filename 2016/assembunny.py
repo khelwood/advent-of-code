@@ -155,11 +155,40 @@ def unwrap_five(prog, line, src, delta):
         print("(unwrapping %r)"%line)
     return True
 
+# ---------
+# Puzzle 25
+# ---------
+
+OUT_PTN = compile('out #')
+
+OUT_LIMIT = 100
+
+class OutputResult(Exception):
+    pass
+
+class OutputSuccess(OutputResult):
+    pass
+
+class OutputError(OutputResult):
+    pass
+
+def process_out(prog, line, match):
+    obj = match.group(1)
+    value = prog[obj]
+    if prog.verbose:
+        print("OUT", value)
+    if value != prog.out_count%2:
+        raise OutputError()
+    prog.out_count += 1
+    if prog.out_count >= OUT_LIMIT:
+        raise OutputSuccess()
+    prog.advance()
+
 # ---------------
 # Program factory
 # ---------------
 
-def make_program(lines, toggles=False):
+def make_program(lines, toggles=False, outs=False):
     prog = Program(lines)
     prog.add_command(COPY_PTN, process_copy)
     prog.add_command(ALTER_PTN, process_update)
@@ -173,4 +202,9 @@ def make_program(lines, toggles=False):
         prog.add_toggle('tgl', 'inc')
         prog.add_toggle('jnz', 'cpy')
         prog.add_toggle('cpy', 'jnz')
+    if outs:
+        prog.add_command(OUT_PTN, process_out)
+        prog.add_toggle('out', 'inc')
+        prog.last_out = None
+        prog.out_count = 0
     return prog
