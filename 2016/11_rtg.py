@@ -1,31 +1,21 @@
 #!/usr/bin/env python3
 
+
 from itertools import combinations
 
-PART = 2
-
 START='00010102222'
-COLUMNS = 'E T TG P PG S SG M MG R RG'
+START_EXTRA = '0000'
 
-if PART==2:
-    START += '0000'
-    COLUMNS += 'L LG D DG'
-
-START = tuple(ord(ch)-ord('0') for ch in START)
+COLUMNS = 'E T TG P PG S SG M MG R RG L LG D DG'
 COLUMNS = tuple(x.ljust(2) for x in COLUMNS.split())
-
 
 def presence(seq, floor, ci):
     return COLUMNS[ci] if seq[ci]==floor else '. '
 
 def describe(seq):
     for floor in range(3, -1, -1):
-        presences = [presence(seq, floor, ci) for ci in range(len(COLUMNS))]
-        print(f'F{floor+1}  {" ".join(presences)}')
-
-cur_states = [START]
-seen = {START}
-next_states = []
+        presences = [presence(seq, floor, ci) for ci in range(len(seq))]
+        print(f' F{floor+1}  {" ".join(presences)}')
 
 def find_moves(cur):
     cur = list(cur)
@@ -60,7 +50,6 @@ def find_down_moves(cur):
             x[i] = new_floor
         yield x
 
-
 def legal(state):
     lonely_chip_floors = set()
     gen_floors = set()
@@ -80,7 +69,7 @@ def find_invs(cur):
     yield from combinations(invs, 1)
     yield from combinations(invs, 2)
 
-def find_next_moves():
+def find_next_moves(cur_states, next_states, seen):
     for cur in cur_states:
         for ns in find_moves(cur):
             if is_win(ns):
@@ -92,17 +81,31 @@ def find_next_moves():
                 next_states.append(ns)
                 seen.add(ns)
 
-def main():
-    global cur_states
-    global next_states
-    describe(START)
+def process(start, verbose=False):
+    cur_states = [start]
+    next_states = []
+    seen = {start}
     moves = 1
-    while not find_next_moves():
+    while not find_next_moves(cur_states, next_states, seen):
         moves += 1
-        print(f' (move {moves}, checked {len(seen)})',end='\r')
+        if verbose:
+            print(f' (move {moves}, checked {len(seen)})', end='\r')
         cur_states = next_states
         next_states = []
-    print(f"Moves: {moves}                         ")
+    if verbose:
+        print(' '*60, end='\r')
+    return moves
+
+                
+def main():
+    starts = [START, START+START_EXTRA]
+    for i, start in enumerate(starts, 1):
+        start = tuple(map(int, start))
+        print(f"\nPart {i}. Start positions:")
+        describe(start)
+        print()
+        m = process(start)
+        print("Moves:", m)
         
 if __name__ == '__main__':
     main()
