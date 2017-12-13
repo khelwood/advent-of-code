@@ -1,32 +1,25 @@
 #!/usr/bin/env python3
 
-import pyperclip
+import sys
 
-PART = 2
-
-ORDA = ord('a')
-
-def extract_letter(letters):
+def extract_letter(letters, use_min=False):
     counts = [0]*26
     for ch in letters:
-        counts[ord(ch)-ORDA] += 1
-    if PART==2:
+        counts[ord(ch)-ord('a')] += 1
+    if use_min:
         m = min(filter(bool, counts))
     else:
         m = max(counts)
     i = counts.index(m)
-    return chr(ORDA+i)
-
-def columns(lines):
-    return zip(*lines)
+    return chr(ord('a')+i)
 
 def main():
-    print("Copy message to clipboard and press enter.")
-    input()
-    block = pyperclip.paste().strip()
-    lines = block.split('\n')
-    message = ''.join(map(extract_letter, columns(lines)))
-    print(f"Message: {message}")
+    lines = sys.stdin.read().strip().split('\n')
+    columns = list(zip(*lines))
+    message = ''.join(map(extract_letter, columns))
+    print("First message:", message)
+    message = ''.join([extract_letter(letters, True) for letters in columns])
+    print("Second message:", message)
 
 if __name__ == '__main__':
     main()
