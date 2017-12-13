@@ -17,6 +17,7 @@ class Grid(object):
         self._data = [fill]*(width*height)
     width = property(lambda self : self._width)
     height = property(lambda self : self._height)
+    data = property(lambda self : self._data)
     def copy(self):
         cp = Grid.__new__(type(self))
         cp._width = self.width
