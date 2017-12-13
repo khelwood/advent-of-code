@@ -21,13 +21,15 @@ def main():
         else:
             direction = Point(direction.y, -direction.x)
         n = int(step[1:])
-        for _ in range(n):
-            position += direction
-            if visited_twice is None:
+        if visited_twice is None:
+            for _ in range(n):
+                position += direction
                 if position in visited:
                     visited_twice = position
                 else:
                     visited.add(position)
+        else:
+            position += n*direction
     print("Final position:", position, "at distance:", manhattan(position))
     print("First repeated position:", visited_twice,
               "at distance:", manhattan(visited_twice))
