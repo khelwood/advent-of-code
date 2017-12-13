@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
-import clip
 import sys
 import re
+
+# The queue of bots that need to pass on chips to their pals.
+# These are queued up as chips are passed around so that the
+# exchanges happen in a reasonable order.
 
 check_queue = []
 
@@ -39,31 +42,32 @@ class Output:
 
 class BotDict(dict):
     def __missing__(self, key):
-        if key.startswith('bot'):
-            v = Bot(key)
-        else:
-            v = Output(key)
+        v = Bot(key) if key.startswith('bot') else Output(key)
         self[key] = v
         return v
 
 agents = BotDict()
 
-BOT_PTN = re.compile('BOT gives low to BOT and high to BOT'
-                         .replace('BOT', '(\w+ [0-9]+)'))
-INPUT_PTN = re.compile('value ([0-9]+) goes to (\w+ [0-9]+)')
+def _compile(expr):
+    return re.compile(expr.replace('BOT', '(\w+ [0-9]+)'))
+
+def _match(ptn, line):
+    m = re.match(ptn, line)
+    if not m:
+        raise ValueError(repr(line))
+    return m
+
+BOT_PTN = _compile('BOT gives low to BOT and high to BOT')
+INPUT_PTN = _compile('value ([0-9]+) goes to BOT')
 
 def process_bot(line):
-    m = re.match(BOT_PTN, line)
-    if not m:
-        raise ValueError(line)
+    m = _match(BOT_PTN, line)
     donor, low, high = [agents[m.group(i)] for i in range(1,4)]
     donor.low_to = low
     donor.high_to = high
 
 def process_input(line):
-    m = re.match(INPUT_PTN, line)
-    if not m:
-        raise ValueError(line)
+    m = _match(INPUT_PTN, line)
     v = int(m.group(1))
     bot = agents[m.group(2)]
     bot.receive(v)
@@ -71,34 +75,23 @@ def process_input(line):
         check_queue.pop(0).check_capacity()
 
 def process_lines(lines):
-    bot_lines = []
     input_lines = []
     for line in lines:
-        (bot_lines if line.startswith('bot') else input_lines).append(line)
-    for line in bot_lines:
-        process_bot(line)
+        if line.startswith('bot'):
+            process_bot(line)
+        else:
+            input_lines.append(line)
     for line in input_lines:
         process_input(line)
 
 def main():
-    if len(sys.argv) > 1:
-        x = ' '.join(sys.argv[1:])
-    else:
-        print("Press enter to paste.")
-        input()
-        x = clip.paste()
-    x = x.strip()
-    process_lines(x.split('\n'))
-    print("Processed.")
+    lines = sys.stdin.read().strip().split('\n')
+    process_lines(lines)
     for agent in agents.values():
         if agent.is_bot and (17, 61) in agent.comparisons:
             print(f'{agent.name} compared 17 and 61.')
-    product = 1
-    for i in range(3):
-        output = agents[f'output {i}']
-        print(f"{output.name}: {output.chips}")
-        product *= output.chips[0]
-    print(f"Product: {product}")
+    a,b,c = [agents[f'output {i}'].chips[0] for i in range(3)]
+    print("Product:", a*b*c)
 
 if __name__ == '__main__':
     main()
