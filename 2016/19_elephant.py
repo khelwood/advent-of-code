@@ -43,10 +43,13 @@ def steal_opposite(num_elfs):
         elfs = contract(elfs[i+1:]) + contract(elfs[:i])
     return elfs[0]
 
-def main(num):
+def main():
+    if len(sys.argv)<=1:
+        exit("Usage: %s <number>"%sys.argv[0])
+    num = int(sys.argv[1])
     print('Part 1 result:', cull(num))
     r = steal_opposite(num)
-    print('Part 2 result:', r) # lower than 1468247
+    print('Part 2 result:', r)
 
 if __name__ == '__main__':
-    main(int(sys.argv[1]))
+    main()

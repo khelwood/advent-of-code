@@ -30,13 +30,12 @@ def count_unblocked(ranges):
     return count
 
 def main():
-    data = sys.stdin.read().strip()
-    ranges = [makeblockrange(line) for line in data.split('\n')]
-    ranges.sort() # sorts by start
+    lines = sys.stdin.read().strip().split('\n')
+    ranges = sorted(map(makeblockrange, lines))
     x = find_least_unblocked(ranges)
     print("Least unblocked:", x)
     n = count_unblocked(ranges)
-    print("Num unblocked:", n)
+    print("Number unblocked:", n)
 
 if __name__ == '__main__':
     main()

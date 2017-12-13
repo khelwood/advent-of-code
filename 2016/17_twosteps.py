@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 import sys
+import hashlib
 
-sys.path.append('..')
-
-from hashlib import md5
-from point import Point
 from collections import namedtuple
 
-PASSCODE = 'lpvhkcbi'
+sys.path.append('..')
+from point import Point
 
 START = Point(0,0)
 DEST = Point(3,3)
@@ -27,7 +25,7 @@ DOORS = tuple(Door(i, *x) for i,x in enumerate(zip('UDLR', DOORS)))
 UP, DOWN, LEFT, RIGHT = DOORS
 
 def get_hash(path):
-    return md5((PASSCODE+path).encode('ascii')).hexdigest()
+    return hashlib.md5((PASSCODE+path).encode('ascii')).hexdigest()
 
 def is_open(h, door):
     return ('b' <= h[door.index] <= 'f')
@@ -95,6 +93,7 @@ def main():
     print("Longest solution length:", len(longest_solution))
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        PASSCODE = sys.argv[1]
+    if len(sys.argv) <= 1:
+        exit("Usage: %s <passcode>"%sys.argv[0])
+    PASSCODE = sys.argv[1]
     main()

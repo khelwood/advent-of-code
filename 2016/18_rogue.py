@@ -18,6 +18,8 @@ def trap_content(prev_row, i):
         return SAFE
     return TRAP
 
+# The rows don't repeat with 400000, so we can't even
+#  find a cycle and multiply it up.
 def count_safe(first, num_rows):
     row = first
     result = row.count(SAFE)
@@ -25,16 +27,18 @@ def count_safe(first, num_rows):
     for i in range(num_rows-1):
         if i>=next_print:
             print(" %r   "%i, end='\r')
-            next_print += 1000
+            next_print += 4000
         row = traps(row)
         result += row.count(SAFE)
     return result
 
 def main():
     data = sys.stdin.read().strip()
-    num_rows = 400000 # 40 for part 1
-    num_safe = count_safe(data, num_rows)
-    print("Num safe:", num_safe)
+    num_rowses = [40, 400000]
+    for num_rows in num_rowses:
+        print("\nNum rows:", num_rows)
+        num_safe = count_safe(data, num_rows)
+        print("Num safe:", num_safe)
 
 if __name__ == '__main__':
     main()
