@@ -3,12 +3,23 @@
 import sys
 import hashlib
 
-def find_hashes(door):
-    i = 0
+def make_hash(door, i):
+    s = door+str(i)
+    return hashlib.md5(s.encode('ascii')).hexdigest()
+
+def hash_ok(h):
+    return h.startswith('00000')
+
+_next_hash = 0
+
+def find_hashes(door, cached_hashes=[]):
+    global _next_hash
+    yield from cached_hashes
     while True:
-        i += 1
-        h = make_hash(door, i)
+        h = make_hash(door, _next_hash)
+        _next_hash += 1
         if hash_ok(h):
+            cached_hashes.append(h)
             yield h
 
 def first_password(door, length=8):
@@ -32,13 +43,6 @@ def second_password(door, length=8):
             if found >= length:
                 break
     return ''.join(results)
-
-def make_hash(door, i):
-    s = door+str(i)
-    return hashlib.md5(s.encode('ascii')).hexdigest()
-
-def hash_ok(h):
-    return h.startswith('00000')
 
 def main():
     if len(sys.argv) <= 1:
