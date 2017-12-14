@@ -75,9 +75,11 @@ class Point(tuple):
         __div__ = scalarfn(operator.div)
         def __ne__(self, other):
             return not(self==other)
-        __nonzero__ = any
+        def __nonzero__(self):
+            return any(self)
     else:
-        __bool__ = any
+        def __bool__(self):
+            return any(self)
 
 if __name__ == '__main__':
     p = Point(3,2)
@@ -96,3 +98,5 @@ if __name__ == '__main__':
     assert p%2==(1,0)
     assert Point.max([p,-p])==p
     assert Point.min([p,-p])==-p
+    assert bool(p)
+    assert not bool(Point(0,0))
