@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
+
 import functools
 import operator
+
+EXTRA_LENGTHS = [17, 31, 73, 47, 23]
 
 class Loop:
     DEFAULT_LENGTH = 256
@@ -30,8 +34,18 @@ class Loop:
         for _ in range(repeats):
             for length in lengths:
                 self.twist(length)
-    def knothash(self):
-        dense = [functools.reduce(operator.xor, self.data[i:i+16])
+    def apply_input(self, text, repeats=64):
+        lengths = [ord(ch) for ch in text] + EXTRA_LENGTHS
+        return self.apply_twists(lengths, repeats)
+    def densehash(self):
+        return [functools.reduce(operator.xor, self.data[i:i+16])
                      for i in range(0, len(self), 16)]
-        return ''.join([format(n, '02x') for n in dense])
-
+    def knothash(self):
+        return ''.join([format(n, '02x') for n in self.densehash()])
+    
+if __name__ == '__main__':
+    import sys
+    seed = sys.argv[1]
+    loop = Loop()
+    loop.apply_input(seed)
+    print(loop.knothash())

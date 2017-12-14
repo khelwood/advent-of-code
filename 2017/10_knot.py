@@ -15,9 +15,8 @@ def main():
     print("Product of first two numbers:", loop[0]*loop[1])
     print()
     print("Part 2.")
-    lengths = [ord(ch) for ch in data] + [17, 31, 73, 47, 23]
     loop = Loop()
-    loop.apply_twists(lengths, 64)
+    loop.apply_input(data)
     #print("Loop:", loop)
     kh = loop.knothash()
     print("Knot hash:", kh)
