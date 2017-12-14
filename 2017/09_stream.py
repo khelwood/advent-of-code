@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import clip
+import sys
 
 def remove_junk(text):
     output = []
@@ -64,11 +64,9 @@ def process(text):
     return score
 
 def main():
-    print("Press enter to start.")
-    input()
-    block = clip.paste().strip()
-    print("Score:", process(block))
-    print("Garbage count:", count_garbage(block))
+    text = sys.stdin.read().strip()
+    print("Score:", process(text))
+    print("Garbage count:", count_garbage(text))
 
 if __name__ == '__main__':
     main()
