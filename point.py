@@ -15,18 +15,16 @@ if _PY < 3:
 else:
     _zip = zip
 
-
 def coordfn(fn):
     return lambda self, other: type(self)(fn(self[0], other[0]), fn(self[1], other[1]))
+
 def scalarfn(fn):
     return lambda self, other: type(self)(fn(self[0], other), fn(self[1], other))
 
 class Point(tuple):
     '2D immutable point class'
     __slots__ = ()
-    def __new__(cls, x, y=None):
-        if y is None:
-            return tuple.__new__(cls, x)
+    def __new__(cls, x, y):
         return tuple.__new__(cls, (x, y))
     x = property(lambda self: self[0], doc='Alias for field 0')
     y = property(lambda self: self[1], doc='Alias for field 1')
@@ -34,9 +32,10 @@ class Point(tuple):
     __radd__ = coordfn(lambda a,b: b+a)
     __sub__ = coordfn(operator.sub)
     __rsub__ = coordfn(lambda a,b: b-a)
-    __str__ = tuple.__repr__
+    def __str__(self):
+        return '(%r,%r)'%self
     def __repr__(self):
-        return '%s%s'%(type(self).__name__, self)
+        return type(self).__name__+str(self)
     def __neg__(self):
         return Point(-self[0], -self[1])
     def __pos__(self):
@@ -49,11 +48,8 @@ class Point(tuple):
     def dot(self, other):
         return sum(a*b for a,b in _zip(self, other))
     def __eq__(self, other):
-        try:
-            return (isinstance(other, tuple) and len(self)==len(other) and
-                    all(a==b for a,b in _zip(self, other)))
-        except TypeError:
-            return False
+        return (isinstance(other, tuple) and len(self)==len(other) and
+                all(a==b for a,b in _zip(self, other)))
     __hash__ = tuple.__hash__
     @classmethod
     def of(cls, p):
