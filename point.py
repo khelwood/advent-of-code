@@ -98,5 +98,6 @@ if __name__ == '__main__':
     assert p%2==(1,0)
     assert Point.max([p,-p])==p
     assert Point.min([p,-p])==-p
-    assert bool(p)
+    assert bool(Point(0,1))
+    assert bool(Point(1,0))
     assert not bool(Point(0,0))
