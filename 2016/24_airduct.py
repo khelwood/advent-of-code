@@ -8,7 +8,6 @@ sys.path.append('..')
 from point import Point
 from grid import Grid
 
-
 def build_maze(lines):
     maze = Grid(len(lines[0]), len(lines), '.')
     targets = {}
@@ -109,7 +108,6 @@ def main():
         if c and (not best or best > c):
             best = c
     print("Steps required, returning to start:", best)
-
 
 if __name__ == '__main__':
     main()

@@ -5,8 +5,8 @@ from assembunny import make_program, OutputError, OutputSuccess
 
 def main():
     lines = sys.stdin.read().strip().split('\n')
-    for i in range(0,10000):
-        print(".", end='', flush=True)
+    for i in range(0,1000):
+        print(" (Trying %s)"%i, end='\r')
         prog = make_program(lines, True, True)
         prog['a'] = i
         try:
@@ -14,7 +14,7 @@ def main():
         except OutputError:
             continue
         except OutputSuccess:
-            print("Success!")
+            print("\nSuccess!")
             print("Result:",i)
             return
 

@@ -14,10 +14,9 @@ and that one is always the destination for the next move.
 import sys
 import re
 import itertools
-#import time
+from collections import namedtuple
 
 sys.path.append('..')
-
 from point import Point
 
 LEFT = Point(-1,0)
@@ -27,33 +26,18 @@ UP = Point(0,-1)
 
 PRIZE, DESTINATION, OBSTACLE, EMPTY, NORMAL = '*X#O.'
 
-NODE_PTN = re.compile(r'/dev/grid/(node-x([0-9]+)-y([0-9]+)) #T #T #T '
+NODE_PTN = re.compile(r'/dev/grid/node-x#-y# #T #T #T '
                 .replace(' ',r'\s+').replace('#', '([0-9]+)'))
 
-class Node:
-    def __init__(self, desc, pos, size, used, avail):
-        self.desc = desc
-        self.position = pos
-        self.size = size
-        self.used = used
-        self.avail = avail
-    def __str__(self):
-        return self.desc
-    def __repr__(self):
-        return 'Node(%r, %s, %r, %r, %r)'%(
-            self.desc, self.position, self.size, self.used, self.avail)
-
+Node = namedtuple('Node', 'position size used avail')
+    
 def make_node(text):
     m = NODE_PTN.match(text)
     if not m:
         return None
-    desc = m.group(1)
-    x = int(m.group(2))
-    y = int(m.group(3))
-    size = int(m.group(4))
-    used = int(m.group(5))
-    avail = int(m.group(6))
-    return Node(desc, Point(x,y), size, used, avail)
+    args = [int(m.group(i+1)) for i in range(5)]
+    args[0:2] = [Point(args[0], args[1])]
+    return Node(*args)
     
 class State:
     def __init__(self, width, height, prize, dest, empty, obstacles):
@@ -151,9 +135,6 @@ def main():
     state.draw()
     m = state.find_route()
     print("Moves: %s    "%m)
-    #r = find_route(nodes, source, dest)
-    #print("Moves:",r)
-
 
 if __name__ == '__main__':
     main()

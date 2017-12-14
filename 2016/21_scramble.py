@@ -2,6 +2,7 @@
 
 import sys
 import re
+import itertools
 
 START_CODE = 'abcdefgh'
 END_CODE = 'fbgdceah'
@@ -42,14 +43,14 @@ def move_position(code, x, y):
     code.insert(y, code.pop(x))
 
 def unmove_position(code, x, y):
-    code.insert(x, code.pop(y))
+    move_position(code, y, x)
 
 CODE_FINDER = re.compile('#|X|R')
 
 class CodeOperation:
     def __init__(self, regex, fn, unfn=None):
         self.desc = regex
-        self.ptn = re.compile('^'+regex.replace('#','([0-9-]+)')
+        self.ptn = re.compile('^'+regex.replace('#','(-?[0-9]+)')
                                   .replace('X','(\w)')+'$')
         self.params = CODE_FINDER.findall(regex)
         self._fn = fn
@@ -71,25 +72,18 @@ code_ops = (
     CodeOperation('rotate based on position of letter X',
                       rotate_arcane, unrotate_arcane),
     CodeOperation('reverse positions # through #', reverse_positions),
-    CodeOperation('move position # to position #', move_position,
-                      unmove_position),
+    CodeOperation('move position # to position #',
+                      move_position, unmove_position),
 )
 
 def param_values(params):
     letters = START_CODE
     span = range(8) if params[0]=='#' else letters
     if len(params)==1:
-        for i in span:
-            yield (i,)
-        return
+        return map(lambda i: (i,), span)
     if span==letters:
-        for i in span:
-            for j in span:
-                yield (i,j)
-    else:
-        for i in span:
-            for j in range(i+1,8):
-                yield (i,j)
+        return itertools.product(letters, letters)
+    return itertools.combinations(span, 2)
     
 def test_code_ops():
     letters = START_CODE
@@ -104,19 +98,18 @@ def test_code_ops():
                       (code_op.desc, args, ''.join(coded), ''.join(code), letters))
 
 def main(start, end):
-    data = sys.stdin.read()
-    commands = data.strip().split('\n')
+    commands = sys.stdin.read().split('\n')
     code = list(start)
     for command in commands:
         if not any(code_op(command, code) for code_op in code_ops):
             raise ValueError(repr(command))
-    print(''.join(code))
+    print("Part 1.", ''.join(code))
     # Part 2
     code = list(end)
     for command in reversed(commands):
         if not any(code_op(command, code, True) for code_op in code_ops):
             raise ValueError(repr(command))
-    print(''.join(code))
+    print("Part 2.", ''.join(code))
 
 if __name__ == '__main__':
     # test_code_ops()
