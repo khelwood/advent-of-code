@@ -9,11 +9,6 @@ sys.path.append('..')
 from point import Point
 from grid import Grid
 
-LEFT = Point(-1,0)
-RIGHT = Point(1,0)
-UP = Point(0,-1)
-DOWN = Point(0,1)
-
 def make_maze(key, height):
     maze = Grid(128, height, '.')
     for y in range(height):
@@ -51,6 +46,8 @@ def flood(grid, value, p):
     queue.append(p)
     while queue:
         p = queue.popleft()
+        if grid[p]!=oldvalue:
+            continue
         x0 = p.x
         while x0 > 0 and grid[x0-1, p.y]==oldvalue:
             x0 -= 1
