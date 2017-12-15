@@ -22,28 +22,22 @@ def make_scanner(line, ptn=re.compile('^([0-9]+):\s*([0-9]+)$')):
     d = int(m.group(1))
     r = int(m.group(2))
     c = 2*r - 2
-    return Scanner(depth=d, range=r, cycle=c)
-
-def calc_severity(scanners):
-    return sum(map(penalty, scanners))
-
-def hit_scanners(scanners, offset):
-    return any(hit(sc, offset) for sc in scanners)
+    return Scanner(d, r, c)
 
 def find_offset(scanners):
     offset = 0
     next_print = 0
-    while hit_scanners(scanners, offset):
+    while any(hit(sc, offset) for sc in scanners):
         offset += 1
         if offset >= next_print:
             print(' %s  '%offset, end='\r')
-            next_print += 1000
+            next_print += 100_000
     return offset
 
 def main():
     lines = sys.stdin.read().strip().split('\n')
     scanners = [make_scanner(line) for line in lines]
-    severity = calc_severity(scanners)
+    severity = sum(map(penalty, scanners))
     print("Severity:", severity)
     offset = find_offset(scanners)
     print("Offset:", offset)
