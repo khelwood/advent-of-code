@@ -14,27 +14,6 @@ def sub_grids(grid):
             yield tuple(''.join([grid[x, y] for x in range(x0, x0+block_size)])
                             for y in range(y0, y0+block_size))
 
-def rotate_lines(lines):
-    return tuple(''.join([line[i] for line in reversed(lines)])
-                     for i in range(len(lines)))
-
-def rotate_enhance(source, enhancements):
-    g = enhancements.get(source)
-    if g:
-        return g
-    for _ in range(3):
-        source = rotate_lines(source)
-        g = enhancements.get(source)
-        if g:
-            return g
-
-def find_enhancement(source, enhancements):
-    g = (rotate_enhance(source, enhancements) or
-             rotate_enhance(source[::-1], enhancements))
-    if g is None:
-        raise ValueError(source)
-    return g
-
 def enhance(grid, enhancements):
     new_size = 4*grid.width//3 if grid.width%2 else 3*grid.width//2
     new_grid = Grid(new_size, new_size, '.')
@@ -43,7 +22,7 @@ def enhance(grid, enhancements):
     for y0 in range(0, new_size, block_size):
         for x0 in range(0, new_size, block_size):
             source = next(sources)
-            result = find_enhancement(source, enhancements)
+            result = enhancements[source]
             for y, line in enumerate(result):
                 for x, ch in enumerate(line):
                     new_grid[x+x0, y+y0] = ch
@@ -57,9 +36,22 @@ def read_enhancements(lines):
         results[k] = v
     return results
 
+def rotate_lines(lines):
+    return tuple(''.join([line[i] for line in reversed(lines)])
+                     for i in range(len(lines)))
+
+def enhance_enhancements(enhancements):
+    for k,v in list(enhancements.items()):
+        enhancements[k[::-1]] = v
+        for _ in range(3):
+            k = rotate_lines(k)
+            enhancements[k] = v
+            enhancements[k[::-1]] = v
+
 def main():
     lines = sys.stdin.read().strip().split('\n')
     enhancements = read_enhancements(lines)
+    enhance_enhancements(enhancements)
     grid = Grid(3,3,'.')
     grid[1,0] = grid[2,1] = grid[0,2] = grid[1,2] = grid[2,2] = '#'
     print(grid)
