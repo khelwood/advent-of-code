@@ -15,42 +15,46 @@ if _PY < 3:
 else:
     _zip = zip
 
-def coordfn(fn):
-    return lambda self, other: type(self)(fn(self[0], other[0]), fn(self[1], other[1]))
+def coordfn(fn, swapped=False):
+    if swapped:
+        return lambda self, other: type(self)(fn(other[0], self[0]),
+                                              fn(other[1], self[1]))
+    return lambda self, other: type(self)(fn(self[0], other[0]),
+                                          fn(self[1], other[1]))
 
-def scalarfn(fn):
-    return lambda self, other: type(self)(fn(self[0], other), fn(self[1], other))
+def scalarfn(fn, swapped=False):
+    if swapped:
+        return lambda self, other: type(self)(fn(other, self[0]),
+                                              fn(other, self[1]))
+    return lambda self, other: type(self)(fn(self[0], other),
+                                          fn(self[1], other))
 
 class Point(tuple):
     '2D immutable point class'
     __slots__ = ()
     def __new__(cls, x, y):
         return tuple.__new__(cls, (x, y))
-    x = property(lambda self: self[0], doc='Alias for field 0')
-    y = property(lambda self: self[1], doc='Alias for field 1')
+    x = property(operator.itemgetter(0), doc='Alias for field 0')
+    y = property(operator.itemgetter(1), doc='Alias for field 1')
     __add__ = coordfn(operator.add)
-    __radd__ = coordfn(lambda a,b: b+a)
+    __radd__ = coordfn(operator.add, swapped=True)
     __sub__ = coordfn(operator.sub)
-    __rsub__ = coordfn(lambda a,b: b-a)
+    __rsub__ = coordfn(operator.sub, swapped=True)
     def __str__(self):
         return '(%r,%r)'%self
     def __repr__(self):
         return type(self).__name__+str(self)
     def __neg__(self):
-        return Point(-self[0], -self[1])
+        return type(self)(-self[0], -self[1])
     def __pos__(self):
         return self
     __mul__ = scalarfn(operator.mul)
-    __rmul__ = scalarfn(lambda a,b: b*a)
+    __rmul__ = scalarfn(operator.mul, swapped=True)
     __floordiv__ = scalarfn(operator.floordiv)
     __truediv__ = scalarfn(operator.truediv)
     __mod__ = scalarfn(operator.mod)
     def dot(self, other):
         return sum(a*b for a,b in _zip(self, other))
-    def __eq__(self, other):
-        return (isinstance(other, tuple) and len(self)==len(other) and
-                all(a==b for a,b in _zip(self, other)))
-    __hash__ = tuple.__hash__
     @classmethod
     def of(cls, p):
         return p if isinstance(p,cls) else cls(p[0], p[1])
@@ -69,8 +73,6 @@ class Point(tuple):
         return cls(abs(p[0]), abs(p[1]))
     if _PY < 3:
         __div__ = scalarfn(operator.div)
-        def __ne__(self, other):
-            return not(self==other)
         def __nonzero__(self):
             return any(self)
     else:
@@ -84,9 +86,10 @@ if __name__ == '__main__':
     assert p+p==(6,4)
     assert Point.of(p) is p
     assert Point.of((3,2))==p
-    assert 2*p==p+p
+    assert 2*p==p+p==p*2
     assert p/2==((1,1) if _PY < 3 else (1.5, 1.0))
     assert p//2==(1,1)
+    assert p/2.0==(1.5, 1.0)
     assert -p==(-3,-2)
     assert Point.abs(-p)==p
     assert Point.min(p, -p)==-p
@@ -97,3 +100,6 @@ if __name__ == '__main__':
     assert bool(Point(0,1))
     assert bool(Point(1,0))
     assert not bool(Point(0,0))
+    assert hash((1,2))==hash(Point(1,2))
+    assert p.x==3
+    assert p.y==2
