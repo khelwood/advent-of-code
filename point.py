@@ -77,6 +77,7 @@ class Point(tuple):
 if __name__ == '__main__':
     p = Point(3,2)
     assert p==(3,2)
+    assert p is +p
     assert p!=(2,3)
     assert p+p==(6,4)
     assert Point.of(p) is p
@@ -96,5 +97,11 @@ if __name__ == '__main__':
     assert bool(Point(1,0))
     assert bool(Point(0,0))
     assert hash((1,2))==hash(Point(1,2))
+    assert p-(0,1)==(3,1)
+    assert (5,5)-p==(2,3)
+    assert p+(0,1)==(3,3)==(0,1)+p
     assert p.x==3
     assert p.y==2
+    assert p.dot((3,4))==17
+    assert str(p)=='(3,2)'
+    assert repr(p)=='Point(3,2)'
