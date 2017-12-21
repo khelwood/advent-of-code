@@ -73,11 +73,6 @@ class Point(tuple):
         return cls(abs(p[0]), abs(p[1]))
     if _PY < 3:
         __div__ = scalarfn(operator.div)
-        def __nonzero__(self):
-            return any(self)
-    else:
-        def __bool__(self):
-            return any(self)
 
 if __name__ == '__main__':
     p = Point(3,2)
@@ -99,7 +94,7 @@ if __name__ == '__main__':
     assert Point.min([p,-p])==-p
     assert bool(Point(0,1))
     assert bool(Point(1,0))
-    assert not bool(Point(0,0))
+    assert bool(Point(0,0))
     assert hash((1,2))==hash(Point(1,2))
     assert p.x==3
     assert p.y==2
