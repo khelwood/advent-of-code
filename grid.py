@@ -2,6 +2,7 @@
 
 from point import Point
 import sys
+import itertools
 
 _PY = sys.version_info[0]
 
@@ -14,53 +15,36 @@ class Grid(object):
     def __init__(self, width, height, fill=None):
         self._width = width
         self._height = height
-        self._data = [fill]*(width*height)
+        self._rows = [[fill]*width for _ in _range(height)]
     width = property(lambda self : self._width)
     height = property(lambda self : self._height)
-    data = property(lambda self : self._data)
     def copy(self):
         cp = Grid.__new__(type(self))
         cp._width = self.width
         cp._height = self.height
-        cp._data = self._data[:]
+        cp._rows = [row[:] for row in self._rows]
         return cp
     def __len__(self):
-        return len(self._data)
+        return (self.width*self.height)
     def __iter__(self):
         for y in range(self.height):
             for x in range(self.width):
                 yield Point(x,y)
-    def _toindex(self, x,y=None):
-        if y is None:
-            x,y = x
-        if (x,y) not in self:
-            raise ValueError("Coordinates outside grid: %s"%((x,y),))
-        return x + self.width*y
-    def _toxy(self, index):
-        if not 0 <= index < len(self):
-            raise ValueError("Index outside grid: %s"%index)
-        return Point(index%self.width, index//self.width)
     def __contains__(self, p):
         return (0 <= p[0] < self.width
                 and 0 <= p[1] < self.height)
     def __getitem__(self, p):
-        return self._data[self._toindex(p)]
-    def __setitem__(self, p, v):
-        self._data[self._toindex(p)] = v
+        return self._rows[p[1]][p[0]]
+    def __setitem__(self, p, value):
+        self._rows[p[1]][p[0]] = value
     def __delitem__(self, p):
-        self._data[self._toindex(p)] = None
-    def getrow(self, y):
-        return self._data[self._toindex(0,y) : self._toindex(self.width-1,y)+1]
-    def getcolumn(self, x):
-        return self._data[self._toindex(x,0) :
-                          self._toindex(x, self.height-1)+1 :
-                          self.width]
+        self._rows[p[1]][p[0]] = None
     def rows(self):
-        for y in _range(self.height):
-            yield self.getrow(y)
-    def columns(self):
-        for x in _range(self.width):
-            yield self.getcolumn(x)
+        return self._rows
+    def values(self):
+        return itertools.chain(*self._rows)
+    def count(self, value):
+        return sum(row.count(value) for row in self._rows)
     def __eq__(self, other):
         if self is other:
             return True

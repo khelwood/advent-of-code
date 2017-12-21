@@ -75,7 +75,7 @@ def main():
     print("Building maze...")
     key = sys.argv[1]
     maze = make_maze(key, 128)
-    count = maze.data.count('#')
+    count = maze.count('#')
     print("Used count:", count)
     regions = count_regions(maze)
     print("Num regions:", regions)

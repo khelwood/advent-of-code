@@ -57,7 +57,7 @@ def main():
     grid = Grid(50, 6, OFF)
     for line in lines:
         process(grid, line)
-    count_on = sum(x==ON for x in grid.data)
+    count_on = grid.count(ON)
     print("Count:", count_on)
     print(grid)
 
