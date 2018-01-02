@@ -21,15 +21,12 @@ def iter_groups(weights, target):
             yield (ws | rest)
 
 def valid_third(weights, gp, target):
-    for g in iter_groups(set(weights)-set(gp), target):
-        return True
-    return False
+    return any(iter_groups(set(weights)-set(gp), target))
 
 def valid_quarter(weights, gp, target):
     weights = set(weights)-set(gp)
     for alpha in iter_groups(weights, target):
-        alpha_c = weights-alpha
-        for beta in iter_groups(weights, target):
+        if any(iter_groups(weights-alpha, target)):
             return True
     return False
             
@@ -55,7 +52,7 @@ def best_group(weights, num):
     return best_gp
 
 def main():
-    weights = [int(n) for n in sys.stdin.read().split()]
+    weights = tuple(int(n) for n in sys.stdin.read().split())
     bg = best_group(weights, 3)
     print("Best group (from 3):", bg)
     print("QE:", product(bg))
