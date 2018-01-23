@@ -2,13 +2,10 @@
 
 import sys
 
-sys.path.append('..')
-from point import Point
-
 NEIGHBOURHOOD = (
-    Point(-1,-1), Point(-1,0), Point(-1,1),
-    Point(0, -1), Point(0, 1),
-    Point(1, -1), Point(1, 0), Point(1, 1),
+    (-1,-1), (-1,0), (-1,1),
+    (0, -1), (0, 1),
+    (1, -1), (1, 0), (1, 1),
 )
 WIDTH = HEIGHT = 100
 
@@ -22,7 +19,7 @@ def load_lines(lines):
 
 def neighbours(p):
     for d in NEIGHBOURHOOD:
-        yield p + d
+        yield (p[0]+d[0], p[1]+d[1])
                 
 def advance_lights(on, stuck_on=()):
     new = set(stuck_on)
