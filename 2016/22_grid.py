@@ -3,7 +3,7 @@
 """Observations:
 Most of the nodes are around 90T in size.
 A few are much bigger, around 500T.
-The big ones all contain too much date to be moved: they are
+The big ones all contain too much data to be moved: they are
 essentially obstacles.
 Of the normal size ones, one is empty, and the rest contain
 about 70T. Therefore no node can contain two nodes' worth of data.
