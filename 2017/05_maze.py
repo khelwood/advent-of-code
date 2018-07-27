@@ -2,26 +2,22 @@
 
 import sys
 
-def follow_jumps(numbers, altered):
-    numbers = numbers[:]
-    pos = 0
-    count = 0
-    n = len(numbers)
-    while 0 <= pos < n:
-        count += 1
-        value = numbers[pos]
-        numbers[pos] += (-1 if altered and value >= 3 else 1)
-        pos += value
-    return count
-
+def follow(data, update):
+    data = list(data)
+    n = len(data)
+    i = 0
+    jumps = 0
+    while 0 <= i < n:
+        d = data[i]
+        data[i] += update(d)
+        i += d
+        jumps += 1
+    return jumps
+        
 def main():
-    numbers = [int(n) for n in sys.stdin.read().split()]
-    print(" working...", end='\r')
-    steps = follow_jumps(numbers, False)
-    print("Part 1 steps:", steps)
-    print(" working...", end='\r')
-    steps = follow_jumps(numbers, True)
-    print("Part 2 steps:", steps)
+    data = tuple(map(int, sys.stdin))
+    print(follow(data, lambda n: 1))
+    print(follow(data, lambda n: 1 if n<3 else -1))
 
 if __name__ == '__main__':
     main()
