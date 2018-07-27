@@ -2,37 +2,32 @@
 
 import sys
 
-def redistribute(numbers):
-    length = len(numbers)
-    m = max(numbers)
-    pos = next(i for i,x in enumerate(numbers) if x==m)
-    numbers[pos] = 0
+def redistribute(state):
+    state = list(state)
+    n = len(state)
+    m = max(state)
+    i = next(i for i,v in enumerate(state) if v==m)
+    state[i] = 0
     while m > 0:
-        pos = (pos+1)%length
-        numbers[pos] += 1
+        i = (i+1)%n
+        state[i] += 1
         m -= 1
+    return tuple(state)
 
-def count_till_repeat(numbers):
-    steps = 0
-    length = len(numbers)
-    seen = {tuple(numbers)}
-    while len(seen)>steps:
-        redistribute(numbers)
-        seen.add(tuple(numbers))
-        steps += 1
-    first_repeat = steps
-    numbers_copy = numbers[:]
-    cycle = 1
-    redistribute(numbers)
-    while numbers != numbers_copy:
-        cycle += 1
-        redistribute(numbers)
-    return first_repeat, cycle
+def solve(state):
+    cycles = 0
+    seen = {state: 0}
+    while True:
+        state = redistribute(state)
+        cycles += 1
+        if state in seen:
+            break
+        seen[state] = cycles
+    return cycles, cycles-seen[state]
 
 def main():
-    numbers = [int(n) for n in sys.stdin.read().split()]
-    steps, cycle = count_till_repeat(numbers)
-    print(steps, cycle)
+    banks = tuple(map(int, sys.stdin.read().split()))
+    print(*solve(banks))
 
 if __name__ == '__main__':
     main()
