@@ -3,87 +3,79 @@
 import sys
 import re
 
-def evaluate_once(func):
-    def evaluate_and_replace(self):
-        value = func(self)
-        self.__dict__[func.__name__] = value
-        return value
-    evaluate_and_replace.__name__ = func.__name__
-    return property(evaluate_and_replace)
+from collections import Counter
 
-class Node:
-    def __init__(self, name):
+class Entry:
+    def __init__(self, name, weight, children):
         self.name = name
-        self.parents = []
-
-    @evaluate_once
-    def total_weight(self):
-        return self.weight + sum(x.total_weight for x in self.children)
-
-    @evaluate_once
+        self.weight = weight
+        self.children = tuple(children)
+        self.parent = None
+    @property
     def balanced(self):
-        return all_eq(x.total_weight for x in self.children)
-
-    def find_problem(self):
-        if self.balanced:
-            return self
-        if not all(x.balanced for x in self.children):
-            n = next(x for x in self.children if not x.balanced)
-            return n.find_problem()
-        w = self.children[0].total_weight
-        if w != self.children[1].total_weight:
-            w = self.children[2].total_weight
-        return next(x for x in self.children if x.total_weight!=w)
-
-    def find_correct_weight(self):
-        p = self.parents[0]
-        sibling = p.children[p.children[0]==self]
-        return sibling.total_weight - self.total_weight + self.weight
+        try:
+            return self._balanced
+        except AttributeError:
+            self._balanced = (len(self.children) <= 1 or
+                 all_eq(c.total_weight for c in self.children))
+        return self._balanced
+    @property
+    def total_weight(self):
+        try:
+            return self._total_weight
+        except AttributeError:
+            self._total_weight = self.weight + sum(c.total_weight for c in self.children)
+        return self._total_weight
 
 def all_eq(seq, sentinel=object()):
     it = iter(seq)
-    n = next(it, sentinel)
-    return n is sentinel or all(x==n for x in it)
+    v = next(it, sentinel)
+    return v is sentinel or all(x==v for x in it)
 
-class NodeDict(dict):
-    def __missing__(self, key):
-        value = self[key] = Node(key)
-        return value
+def make_entry(line, pattern=re.compile(r'(\w+)\s*\((\d+)\)\s*$')):
+    line, _, cline = line.partition('->')
+    m = pattern.match(line)
+    name = m.group(1)
+    weight = int(m.group(2))
+    children = tuple(cline.replace(',',' ').split())
+    return Entry(name, weight, children)
 
-NODE_PTN = re.compile(r'^(\w+) \(([0-9]+)\)(?: -> ([\w, ]+))?$')
+def read_entries():
+    edict = { e.name: e for e in map(make_entry, sys.stdin) }
+    # link children and parents
+    for e in edict.values():
+        e.children = tuple(edict[c] for c in e.children)
+        for c in e.children:
+            c.parent = e
+    return tuple(edict.values())
 
-def process(line, nodes):
-    m = NODE_PTN.match(line)
-    name, weight, c = [(m.group(i) or '').strip() for i in range(1,4)]
-    node = nodes[name]
-    if c:
-        children = [nodes[name] for name in c.replace(',',' ').split()]
-        for c in children:
-            c.parents.append(node)
-    else:
-        children = []
-    node.weight = int(weight)
-    node.children = children
+def find_weight_error(entries):
+    """Find the amount (positive or negative) by which the
+    incorrect weight is incorrect."""
+    e = next(e for e in entries
+                 if len(e.children)>=3 and not e.balanced)
+    c = Counter(ec.total_weight for ec in e.children)
+    correct_weight = next(k for k,v in c.items() if v>1)
+    incorrect_weight = next(k for k,v in c.items() if v==1)
+    return incorrect_weight - correct_weight
 
-def create_nodes(lines):
-    nodes = NodeDict()
-    for line in lines:
-        process(line, nodes)
-    return nodes
+def correct_weight(entries):
+    """Find the correct weight of whichever weight is incorrect."""
+    error = find_weight_error(entries)
 
-def find_root(nodes):
-    return next(n for n in nodes.values() if not n.parents)
+    # Find the parent which is imbalanced but all its children are balanced
+    error_parent = next(e for e in entries
+                    if not e.balanced and all(c.balanced for c in e.children))
+    # Find the anomalous entry
+    bad_entry = (max if error > 0 else min)(error_parent.children,
+                                  key=lambda ec : ec.total_weight)
+    return bad_entry.weight - error
 
 def main():
-    lines = sys.stdin.read().strip().split('\n')
-    nodes = create_nodes(lines)
-    print("%s nodes"%len(nodes))
-    root = find_root(nodes)
+    entries = read_entries()
+    root = next(e for e in entries if not e.parent)
     print("Root:", root.name)
-    problem = root.find_problem()
-    print("Problem: %s (%s)"%(problem.name, problem.weight))
-    correct = problem.find_correct_weight()
-    print("Correct weight:", correct)
+    print("Correct weight:", correct_weight(entries))
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
