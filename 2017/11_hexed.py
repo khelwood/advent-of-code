@@ -2,57 +2,24 @@
 
 import sys
 
-from collections import namedtuple
+STEPS = {
+    'n': (1,0), 'ne': (1,1), 'nw': (1,-1),
+    's': (-1,0), 'se': (-1,1), 'sw': (-1,-1),
+}
 
-Alternative = namedtuple('Alternative', 'dir sign')
-
-def read_alt(alt):
-    delta = -1 if alt.startswith('-') else 1
-    return Alternative(alt.lstrip('+-'), delta)
-
-def sign(n):
-    return (1 if n>1 else -1 if n<0 else 0)
-
-class Direction:
-    def __init__(self, name, opposite, alts):
-        self.name = name
-        self.opposite = opposite
-        self.alts = [read_alt(alt) for alt in alts.split()]
-    def apply(self, loc, delta):
-        if (sign(loc[self.name]) != -delta
-                and any(sign(loc[alt.dir])==-delta*alt.sign
-                            for alt in self.alts)):
-            for alt in self.alts:
-                loc[alt.dir] += delta*alt.sign
-        else:
-            loc[self.name] += delta
-
-DIRECTIONS = (
-    Direction('n', 's', '+nw +ne'),
-    Direction('ne', 'sw', '-nw +n'),
-    Direction('nw', 'se', '-ne +n'),
-)
-
-DIR_DICT = { d.name: (d,1) for d in DIRECTIONS }
-DIR_DICT.update({ d.opposite: (d,-1) for d in DIRECTIONS })
-
-def track_distance(split_data):
-    loc = { d.name: 0 for d in DIRECTIONS }
-    most_steps = 0
-    for d in split_data:
-        direction, delta = DIR_DICT[d]
-        direction.apply(loc, delta)
-        steps = sum(map(abs, loc.values()))
-        if steps > most_steps:
-            most_steps = steps
-
-    print("Final distance:", steps)
-    print("Greatest distance:", most_steps)
-            
-    
 def main():
-    data = sys.stdin.read().replace(',',' ').split()
-    track_distance(data)
+    steps = sys.stdin.read().split(',')
+    furthest = 0
+    n = e = 0
+    for step in steps:
+        dn,de = STEPS[step]
+        n += dn
+        e += de
+        dist = max(abs(n), abs(e))
+        if dist > furthest:
+            furthest = dist
+    print("Final distance:", dist)
+    print("Furthest:", furthest)
 
 if __name__ == '__main__':
     main()
