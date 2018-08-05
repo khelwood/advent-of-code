@@ -5,72 +5,76 @@ import re
 
 from collections import namedtuple
 
-Command = namedtuple('Command', 'pattern function')
-Move = namedtuple('Move', 'function arguments')
+DanceMove = namedtuple('DanceMove', 'function args')
+DanceMove.__call__ = lambda self, programs: self.function(programs, *self.args)
 
 COMMANDS = []
 
 def make_command(expr):
-    pattern = re.compile('^'+expr.replace('#', '([0-9a-z]+)')+'$')
-    def command_maker(function):
-        cmd = Command(pattern, function)
-        COMMANDS.append(cmd)
-        return cmd
-    return command_maker
+    pattern = re.compile('^' + expr.replace('#', '([0-9a-z]+)') + '$')
+    def make_command(function):
+        function.pattern = pattern
+        COMMANDS.append(function)
+        return function
+    return make_command
 
 @make_command('s#')
-def spin(programs, num):
-    num = int(num)%len(programs)
-    if num:
-        programs[:] = programs[-num:] + programs[:-num]
+def spin(programs, x):
+    x %= len(programs)
+    if x==0:
+        return programs
+    return programs[-x:] + programs[:-x]
 
 @make_command('x#/#')
-def exchange(programs, n1, n2):
-    n1,n2 = map(int, (n1, n2))
-    programs[n1], programs[n2] = programs[n2], programs[n1]
+def exchange(programs, a, b):
+    programs[a], programs[b] = programs[b], programs[a]
+    return programs
 
 @make_command('p#/#')
-def partner(programs, p1, p2):
-    exchange.function(programs, programs.index(p1), programs.index(p2))
-
-def play_dance(programs, moves):
-    for move in moves:
-        move.function(programs, *move.arguments)
-
-def initialise_programs(n):
-    return [chr(ord('a')+i) for i in range(n)]
-
-def replay_dance(programs, moves, times=1):
-    original = programs[:]
-    for i in range(times):
-        play_dance(programs, moves)
-        if programs==original:
-            break
-    else:
-        return
-    i += 1
-    for _ in range(times%i):
-        play_dance(programs, moves)
+def partner(programs, a, b):
+    i = programs.index(a)
+    j = programs.index(b)
+    programs[i], programs[j] = programs[j], programs[i]
+    return programs
 
 def parse_move(line):
     for cmd in COMMANDS:
         m = re.match(cmd.pattern, line)
         if m:
-            return Move(cmd.function, m.groups())
+            args = tuple(int(x) if x.isdigit() else x for x in m.groups())
+            return DanceMove(cmd, args)
     raise ValueError(repr(line))
+
+def read_dance():
+    moves = tuple(map(parse_move, sys.stdin.read().split(',')))
+    def dance(programs):
+        for move in moves:
+            programs = move(programs)
+        return programs
+    return dance
+
+def replay_dance(n, dance, times=1):
+    original = [chr(i) for i in range(ord('a'), ord('a')+n)]
+    programs = original[:]
+    for i in range(times):
+        programs = dance(programs)
+        if programs==original:
+            break
+    else:
+        return programs
+    for _ in range(times%(i+1)):
+        programs = dance(programs)
+    return programs
         
 def main():
     if len(sys.argv) == 2:
         num_programs = int(sys.argv[1])
     else:
         num_programs = 16
-    moves = [parse_move(line) for line in sys.stdin.read().strip().split(',')]
-    programs = initialise_programs(num_programs)
-    play_dance(programs, moves)
+    dance = read_dance()
+    programs = replay_dance(num_programs, dance)
     print("Result after one dance:", ''.join(programs))
-    programs = initialise_programs(num_programs)
-    print(' ...',end='\r')
-    replay_dance(programs, moves, 1_000_000_000)
+    programs = replay_dance(num_programs, dance, 1_000_000_000)
     print("Result after one billion dances:", ''.join(programs))
 
 if __name__ == '__main__':
