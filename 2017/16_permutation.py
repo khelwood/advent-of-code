@@ -67,10 +67,7 @@ def replay_dance(n, dance, times=1):
     return programs
         
 def main():
-    if len(sys.argv) == 2:
-        num_programs = int(sys.argv[1])
-    else:
-        num_programs = 16
+    num_programs = int(sys.argv[1]) if len(sys.argv)==2 else 16
     dance = read_dance()
     programs = replay_dance(num_programs, dance)
     print("Result after one dance:", ''.join(programs))
