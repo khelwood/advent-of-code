@@ -13,7 +13,7 @@ def find_repeated(numbers):
             seen.add(cur)
 
 def main():
-    numbers = [int(line.strip().lstrip('+')) for line in sys.stdin]
+    numbers = [int(line) for line in sys.stdin.read().split()]
     print("Resulting frequency:", sum(numbers))
     print("Repeated:", find_repeated(numbers))
 
