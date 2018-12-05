@@ -25,8 +25,7 @@ def main():
     react(sequence)
     print("Reduced length:", len(sequence))
     best_length = len(sequence)
-    for i in range(ord('a'), ord('z')+1):
-        letter = chr(i)
+    for letter in map(chr, range(ord('a'), ord('z')+1)):
         newseq = without(sequence, letter)
         react(newseq)
         if len(newseq) < best_length:
