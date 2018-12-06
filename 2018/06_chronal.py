@@ -33,11 +33,10 @@ def main():
     dists = { (x,y): [abs(x-xi)+abs(y-yi) for (xi,yi) in coords]
               for x,y in itertools.product(range(x0,x1), range(y0,y1)) }
     regions = make_regions(dists, x0, y0, x1, y1)
-    infinite = set()
-    for p in itertools.product(range(x0,x1), (y0, y1-1)):
-        infinite.add(regions[p])
-    for p in itertools.product((x0,x1-1), range(y0+1, y1-1)):
-        infinite.add(regions[p])
+    infinite = { regions[p] for p in itertools.chain(
+        itertools.product(range(x0,x1), (y0, y1-1)),
+        itertools.product((x0,x1-1), range(y0+1, y1-1))
+    )}
     areas = [0]*len(coords)
     for reg in regions.values():
         if reg not in infinite:
