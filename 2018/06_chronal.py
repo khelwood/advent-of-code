@@ -47,8 +47,6 @@ def main():
     LIMIT = 10_000
     goodcount = sum(sum(v) < LIMIT for v in dists.values())
     print("Size of good region:", goodcount)
-    
-        
 
 if __name__ == '__main__':
     main()
