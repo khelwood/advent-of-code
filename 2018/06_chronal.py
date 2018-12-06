@@ -1,57 +1,51 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.append('..')
-from grid import Grid
+import itertools
 
-def manhattan(p,q):
-    return abs(p[0]-q[0]) + abs(p[1]-q[1])
-
-def closest(coords, pos):
-    best = -1
-    dist = None
-    for i,c in enumerate(coords):
-        d = manhattan(pos,c)
-        if dist is None or d < dist:
-            dist = d
-            best = i
-        elif d==dist:
-            best = -1
-    return best
-
-def normalise(coords):
+def bounds(coords):
     (x0,y0) = (x1,y1) = coords[0]
     for (x,y) in coords:
         x0 = min(x0, x)
         y0 = min(y0, y)
         x1 = max(x1, x)
         y1 = max(y1, y)
-    coords[:] = [(x-x0, y-y0) for (x,y) in coords]
-    return x1-x0, y1-y0
+    return x0,y0,x1+1,y1+1
+
+def make_regions(dists, x0,y0, x1,y1):
+    regions = {}
+    for pos in itertools.product(range(x0,x1), range(y0,y1)):
+        region = None
+        dist = x1 + y1 - x0 - y0
+        for i,d in enumerate(dists[pos]):
+            if d < dist:
+                region = i
+                dist = d
+            elif d==dist:
+                region = -1
+        regions[pos] = region
+    return regions
 
 def main():
     coords = [tuple(int(x.strip()) for x in line.split(','))
                   for line in sys.stdin.read().splitlines()]
-    w,h = normalise(coords)
-    grid = Grid(w,h)
-    for p in grid:
-        grid[p] = closest(coords, p)
+    x0,y0,x1,y1 = bounds(coords)
+    dists = { (x,y): [abs(x-xi)+abs(y-yi) for (xi,yi) in coords]
+              for x,y in itertools.product(range(x0,x1), range(y0,y1)) }
+    regions = make_regions(dists, x0, y0, x1, y1)
     infinite = set()
-    for y in (0, grid.height-1):
-        for x in range(grid.width):
-            infinite.add(grid[x,y])
-    for x in (0, grid.width-1):
-        for y in range(1, grid.height-1):
-            infinite.add(grid[x,y])
+    for x,y in itertools.product(range(x0,x1), (y0, y1-1)):
+        infinite.add(regions[x,y])
+    for x,y in itertools.product((x0,x1-1), range(y0+1, y1-1)):
+        infinite.add(regions[x,y])
     areas = [0]*len(coords)
-    for value in grid.values():
-        if value not in infinite:
-            areas[value] += 1
+    for reg in regions.values():
+        if reg not in infinite:
+            areas[reg] += 1
     biggest = max(areas)
     print("Biggest area:", biggest)
     LIMIT = 10_000
-    goodcount = sum(sum(manhattan(p,c) for c in coords) < LIMIT
-                        for p in grid)
+    goodcount = sum(sum(v) < LIMIT for v in dists.values())
     print("Size of good region:", goodcount)
     
         
