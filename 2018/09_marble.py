@@ -69,7 +69,7 @@ class Game:
 
 def main():
     line = sys.stdin.read().strip()
-    m = re.match(r'\D*(\d+)\D+(\d+)\D', line)
+    m = re.match(r'\D*(\d+)\D+(\d+)', line)
     if not m:
         raise ValueError(repr(line))
     num_players, last_marble = map(int, m.groups())
@@ -80,7 +80,7 @@ def main():
     game = Game(num_players, last_marble*100)
     while not game.finished:
         game.play_round()
-    print("Winnig score:", game.max_score())
+    print("Winning score:", game.max_score())
 
 if __name__ == '__main__':
     main()
