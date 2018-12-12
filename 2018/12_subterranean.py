@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""The trick to this one is noticing that the flower-sum you need
+to calculate eventually falls into a pattern where the
+sum after a step is a fixed amount greater than the sum before
+the step. Once you detect that the sequence has settled,
+you can use arithmetic to find the final value."""
+
 import sys
 
 class PlantRow:
@@ -54,13 +60,27 @@ def read_data():
     return state, moves
 
 def main():
+    small_target = 20
+    big_target = 50_000_000_000
     state, moves = read_data()
-    for _ in range(20):
+    last = None
+    for _ in range(small_target):
         state = state.advance(moves)
-    print(state.sum())
-    for _ in range(50_000_000_000 - 20):
+    last = state.sum()
+    print(last)
+    diff1 = diff2 = None
+    for steps in range(small_target, big_target):
         state = state.advance(moves)
-    print(state.sum())
+        cur = state.sum()
+        diff = cur-last
+        last = cur
+        if diff==diff1==diff2:
+            break
+        diff2 = diff1
+        diff1 = diff
+    print(f"After {steps} steps, the diff seems to have settled on {diff}")
+    result = cur + diff * (big_target-steps-1)
+    print("Result:", result)
 
 if __name__ == '__main__':
     main()
