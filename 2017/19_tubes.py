@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 import sys
+import itertools
 
 sys.path.append('..')
 from point import Point
-from grid import Grid
 
 def construct_maze(lines):
-    maze = Grid(len(lines[0]), len(lines), ' ')
+    maze = {}
     for y, line in enumerate(lines):
         for x, ch in enumerate(line):
             maze[x,y] = ch
@@ -52,7 +52,7 @@ def new_direction(maze, pos, direc):
     return None
 
 def traverse(maze):
-    startx = next(x for x in range(maze.width) if maze[x,0]=='|')
+    startx = next(x for x in itertools.count() if maze[x,0]=='|')
     position = Point(startx, 0)
     direction = Point(0, 1)
     letters = []
@@ -70,9 +70,8 @@ def traverse(maze):
             letters.append(ch)
     return steps, letters
 
-
 def main():
-    lines = sys.stdin.read().split('\n')
+    lines = sys.stdin.read().splitlines()
     maze = construct_maze(lines)
     steps, sequence = traverse(maze)
     print(''.join(sequence))
