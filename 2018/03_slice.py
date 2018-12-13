@@ -2,49 +2,42 @@
 
 import sys
 import re
-from dataclasses import dataclass
+import itertools
+from collections import Counter
 
-sys.path.append('..')
-from grid import Grid
-
-@dataclass
-class Claim:
-    id: int
-    left: int
-    top: int
-    width: int
-    height: int
-    def __iter__(self):
-        yrange = range(self.top, self.top + self.height)
-        for x in range(self.left, self.left + self.width):
-            for y in yrange:
-                yield (x,y)
-
-CLAIM_PTN = re.compile('#% @ %,%: %x%$'
-                           .replace(' ', r'\s+')
+CLAIM_PTN = re.compile('# % @ % , % : % x % $'
+                           .replace(' ', r'\s*')
                            .replace('%', r'(\d+)'))
+
+class Claim:
+    def __init__(self, id, left, top, width, height):
+        self.id = id
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+    def __iter__(self):
+        return itertools.product(
+            range(self.left, self.left + self.width),
+            range(self.top, self.top + self.height)
+        )
 
 def make_claim(line):
     m = CLAIM_PTN.match(line)
     if not m:
         raise ValueError(repr(line))
-    d = [int(x) for x in m.groups()]
-    return Claim(id=d[0], left=d[1], top=d[2], width=d[3], height=d[4])
+    return Claim(*map(int, m.groups()))
 
 def main():
     claims = [make_claim(line) for line in sys.stdin.read().splitlines()]
-    grid = Grid(1000, 1000, fill=0)
+    land = Counter()
     for claim in claims:
-        for p in claim:
-            grid[p] += 1
-    overlapcount = sum(v > 1 for v in grid.values())
+        land.update(claim)
+    overlapcount = sum(v > 1 for v in land.values())
     print("Overlap count:", overlapcount)
     for claim in claims:
-        for p in claim:
-            if grid[p] > 1:
-                break
-        else:
-            print("Correct claim:", claim)
+        if all(land[p] <= 1 for p in claim):
+            print("Correct claim ID:", claim.id)
 
 if __name__ == '__main__':
     main()
