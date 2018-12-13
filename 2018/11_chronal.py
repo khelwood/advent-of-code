@@ -2,71 +2,67 @@
 
 import sys
 import itertools
+from collections import defaultdict
 
-sys.path.append('..')
-from grid import Grid
+def compute_power(serial, x, y):
+    rackid = x+10
+    power = rackid * (rackid * y + serial)
+    return (power//100)%10 - 5
 
-def make_grid(serial, width=300, height=300):
-    grid = Grid(width+1, height+1)
-    for x in range(1, width+1):
-        rackid = x+10
-        for y in range(1, height+1):
-            power = rackid * (rackid * y + serial)
-            grid[x,y] = (power//100)%10 - 5
-    return grid
-
-def make_sum_grid(grid):
-    sg = Grid(grid.width, grid.height, fill=0)
+def make_sums(serial, width, height):
+    sums = defaultdict(int)
     for (x,y) in itertools.product(
-            range(1, grid.width),
-            range(1, grid.height)
+            range(1, width),
+            range(1, height)
         ):
-        sg[x,y] = grid[x,y] + sg[x,y-1] + sg[x-1,y] - sg[x-1,y-1]
-    return sg
+        sums[x,y] = (compute_power(serial, x, y) + sums[x, y-1]
+                     + sums[x-1, y] - sums[x-1,y-1])
+    return sums
 
-def high_spot_3(sumgrid):
+def sum_range(sums, x,y, size):
+    x0 = x-1
+    y0 = y-1
+    x1 = x0+size
+    y1 = y0+size
+    return sums[x1,y1] + sums[x0,y0] - sums[x0,y1] - sums[x1,y0]
+
+def high_spot_3(sums, width, height):
     best_total = -100
     for (x,y) in itertools.product(
-            range(1, sumgrid.width-2),
-            range(1, sumgrid.height-2)
+            range(1, width-2),
+            range(1, height-2)
         ):
-        total = sum_range(sumgrid, x, y, 3)
+        total = sum_range(sums, x, y, 3)
         if total > best_total:
             best_total = total
             best = (x,y)
     return best
 
-def high_spot_any(sumgrid):
+def high_spot_any(sums, width, height):
     best_total = -100
     for (x,y) in itertools.product(
-            range(1, sumgrid.width),
-            range(1, sumgrid.height)
+            range(1, width),
+            range(1, height)
         ):
-        ms = 1 + min(sumgrid.width-x, sumgrid.height-y)
+        ms = 1 + min(width-x, height-y)
         for size in range(1, ms):
-            total = sum_range(sumgrid, x, y, size)
+            total = sum_range(sums, x, y, size)
             if total > best_total:
                 best_total = total
                 best = (x,y,size)
     return best
 
-def sum_range(sg, x,y, size):
-    x0 = x-1
-    y0 = y-1
-    x1 = x0+size
-    y1 = y0+size
-    return sg[x1,y1] + sg[x0,y0] - sg[x0,y1] - sg[x1,y0]
-
 def main():
+    WIDTH=301
+    HEIGHT=301
     serial = int(sys.argv[1])
-    grid = make_grid(serial)
-    sumgrid = make_sum_grid(grid)
-    x,y = high_spot_3(sumgrid)
+    sums = make_sums(serial, WIDTH, HEIGHT)
+    x,y = high_spot_3(sums, WIDTH, HEIGHT)
     print(f"High spot for 3 by 3: {x},{y}")
-    print("with total:", sum_range(sumgrid, x, y, 3))
-    x,y,size = high_spot_any(sumgrid)
+    print("with total:", sum_range(sums, x, y, 3))
+    x,y,size = high_spot_any(sums, WIDTH, HEIGHT)
     print(f"High spot for any size: {x},{y},{size}")
-    print("with total:", sum_range(sumgrid, x, y, size))
+    print("with total:", sum_range(sums, x, y, size))
 
 if __name__ == '__main__':
     main()
