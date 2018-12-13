@@ -6,10 +6,9 @@ import itertools
 sys.path.append('..')
 
 from point import Point
-from grid import Grid
 
 def build_maze(lines):
-    maze = Grid(len(lines[0]), len(lines), '.')
+    maze = {}
     targets = {}
     last = 0
     for y,line in enumerate(lines):
@@ -19,15 +18,14 @@ def build_maze(lines):
                 n = int(ch)
                 last = max(last, n)
                 targets[n] = Point(x,y)
-    maze.targets = tuple(targets[i] for i in range(last+1))
-    return maze
+    return maze, tuple(targets[i] for i in range(last+1))
 
-def find_distances(maze):
-    n = len(maze.targets)
+def find_distances(maze, targets):
+    n = len(targets)
     distances = {}
     for si, ei in itertools.combinations(range(n), 2):
-        start = maze.targets[si]
-        end = maze.targets[ei]
+        start = targets[si]
+        end = targets[ei]
         distance = find_travel_distance(maze, start, end)
         distances[si,ei] = distances[ei,si] = distance
         print('.',end='',flush=True)
@@ -51,12 +49,12 @@ def find_travel_distance(maze, start, end):
     return None
 
 def manhattan(p1, p2):
-    return (abs(p1[0]-p2[0])+abs(p1[1]-p2[1]))
+    return (abs(p1[0]-p2[0]) + abs(p1[1]-p2[1]))
 
 def directions(pos, end):
     diff = end-pos
     if abs(diff.x)+abs(diff.y)==1:
-        return (diff,)
+        return (diff,) # we are one step away, so just return that step
     x1 = Point(1 if diff.x>1 else -1, 0)
     y1 = Point(0, 1 if diff.y>1 else -1)
     if abs(diff.x) >= abs(diff.y):
@@ -91,11 +89,11 @@ def steps_for_permutation(distances, perm, start=0):
     return total
 
 def main():
-    maze = build_maze(sys.stdin.read().strip().split('\n'))
+    maze, targets = build_maze(sys.stdin.read().strip().splitlines())
     print("Finding distances between targets ", end='', flush=True)
-    distances = find_distances(maze)
+    distances = find_distances(maze, targets)
     best = None
-    sequence = range(1, len(maze.targets))
+    sequence = range(1, len(targets))
     for perm in itertools.permutations(sequence):
         c = steps_for_permutation(distances, perm)
         if c and (not best or best > c):
