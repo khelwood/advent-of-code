@@ -1,61 +1,45 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.append('..')
+import itertools
 
-from point import Point
-from grid import Grid
+DIRECTIONS = { 'U': (0,-1), 'D': (0,1), 'L': (-1,0), 'R': (1,0) }
 
-DIGITS = '123456789ABCD'
+def addpoint(a,b):
+    return (a[0]+b[0], a[1]+b[1])
 
-DIRECTIONS = { 'U': Point(0,-1), 'D': Point(0,1),
-                   'L': Point(-1,0), 'R': Point(1, 0) }
+def make_first_keypad():
+    prod = itertools.product(range(3), range(3))
+    return {(x,y): str(i) for (i,(y,x)) in enumerate(prod, 1)}
 
-def make_first_grid():
-    grid = Grid(3,3)
-    i = 1
-    for y in range(grid.height):
-        for x in range(grid.width):
-            grid[x,y] = str(i)
-            i += 1
-    return grid
-
-def make_second_grid():
-    grid = Grid(5,5,' ')
-    i = 0
-    x_points = [[2,3], [1,4], [0,5], [1,4], [2,3]]
+def make_second_keypad(DIGITS = '123456789ABCD'):
+    grid = {}
+    digiter = iter(DIGITS)
+    x_points = ((2,3), (1,4), (0,5), (1,4), (2,3))
     for y, xs in enumerate(x_points):
         for x in range(*xs):
-            grid[x,y] = DIGITS[i]
-            i += 1
+            grid[x,y] = next(digiter)
     return grid
 
-def grid_find(grid, value):
-    for y in range(grid.height):
-        for x in range(grid.width):
-            if grid[x,y] == value:
-                return Point(x,y)
-
 def find_code(grid, lines):
-    grid.current = grid_find(grid, '5')
-    letters = [run_line(grid, line) for line in lines]
-    return ''.join(letters)
+    cur = next(k for (k,v) in grid.items() if v=='5')
+    for line in lines:
+        cur = run_line(grid, line, cur)
+        yield grid[cur]
 
-def run_line(grid, line):
+def run_line(grid, line, cur):
     for ch in line:
-        pos = grid.current + DIRECTIONS[ch]
+        pos = addpoint(cur, DIRECTIONS[ch])
         if pos in grid and grid[pos]!=' ':
-            grid.current = pos
-    return grid[grid.current]
+            cur = pos
+    return cur
 
 def main():
     lines = sys.stdin.read().strip().split('\n')
-    grids = [make_first_grid(), make_second_grid()]
+    grids = [make_first_keypad(), make_second_keypad()]
     codes = [find_code(grid, lines) for grid in grids]
-    for i in range(len(grids)):
-        print("\nGrid %s:"%(i+1))
-        print(grids[i])
-        print("Code:", codes[i])
+    for grid in grids:
+        print('Code:', ''.join(find_code(grid, lines)))
 
 if __name__ == '__main__':
     main()
