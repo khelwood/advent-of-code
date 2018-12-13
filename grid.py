@@ -1,5 +1,10 @@
 #!/usr/bin/env python2.7 -tt
 
+"""This module works in Python 2 or Python 3. It describes
+a 2D grid class called Grid."""
+
+__all__ = ['Grid']
+
 from point import Point
 import sys
 import itertools
@@ -27,9 +32,8 @@ class Grid(object):
     def __len__(self):
         return (self.width*self.height)
     def __iter__(self):
-        for y in range(self.height):
-            for x in range(self.width):
-                yield Point(x,y)
+        return (Point(x,y) for (y,x) in itertools.product(
+            range(self.height), range(self.width)))
     def __contains__(self, p):
         return (0 <= p[0] < self.width
                 and 0 <= p[1] < self.height)
