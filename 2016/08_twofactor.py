@@ -48,8 +48,7 @@ def process(grid, line):
     for cmd in Command.commands:
         m = cmd.pattern.match(line)
         if m:
-            args = [int(g) for g in m.groups()]
-            return cmd.function(grid, *args)
+            return cmd.function(grid, *map(int, m.groups()))
     raise ValueError(repr(line))
 
 def display(grid, wid=WIDTH, hei=HEIGHT):
@@ -57,9 +56,8 @@ def display(grid, wid=WIDTH, hei=HEIGHT):
         print(' '.join([grid[x,y] for x in range(wid)]))
 
 def main():
-    lines = sys.stdin.read().strip().split('\n')
     grid = defaultdict(lambda: OFF)
-    for line in lines:
+    for line in sys.stdin.read().strip().splitlines():
         process(grid, line)
     count_on = sum(v==ON for v in grid.values())
     print("Count:", count_on)
