@@ -59,12 +59,12 @@ def main():
         grid = enhance(grid, enhancements)
         print("Enhancement", i+1)
         print(grid)
-    count = grid.data.count('#')
+    count = grid.count('#')
     print("Number on after 5:", count)
     for i in range(13):
         print(" (%s)"%(i+6), end='\r')
         grid = enhance(grid, enhancements)
-    count = grid.data.count('#')
+    count = grid.count('#')
     print("Number on after 18:", count)
 
 if __name__ == '__main__':
