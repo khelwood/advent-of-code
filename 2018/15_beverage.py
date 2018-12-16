@@ -183,9 +183,6 @@ def advance(unit, cave, dest):
 def pos_sort_key(a):
     return (a[1],a[0])
 
-def cuttospace(line):
-    return line.partition(' ')[0]
-
 def main():
     lines = sys.stdin.read().splitlines()
     cave = Cave(lines)
