@@ -2,76 +2,43 @@
 
 import sys
 import re
+import operator
+from collections import namedtuple
 
-OPFUNCS = []
-
-def opfunc(func):
-    OPFUNCS.append(func)
-    return func
-
-@opfunc
-def addr(registers, a, b):
-    return registers[a] + registers[b]
-
-@opfunc
-def addi(registers, a, b):
-    return registers[a] + b
-
-@opfunc
-def mulr(registers, a, b):
-    return registers[a] * registers[b]
-
-@opfunc
-def muli(registers, a, b):
-    return registers[a] * b
-
-@opfunc
-def banr(registers, a, b):
-    return registers[a] & registers[b]
-
-@opfunc
-def bani(registers, a, b):
-    return registers[a] & b
-
-@opfunc
-def borr(registers, a, b):
-    return registers[a] | registers[b]
-
-@opfunc
-def bori(registers, a, b):
-    return registers[a] | b
-
-@opfunc
-def setr(registers, a, b=None):
-    return registers[a]
-
-@opfunc
-def seti(registers, a, b=None):
+def first(a,b=None):
     return a
 
-@opfunc
-def gtir(registers, a, b):
-    return a > registers[b]
+OpFunc = namedtuple('OpFunc', 'func areg breg')
 
-@opfunc
-def gtri(registers, a, b):
-    return registers[a] > b
+OPFUNCS = ((operator.add, True, True),
+            (operator.add, True, False),
+            (operator.mul, True, True),
+            (operator.mul, True, False),
+            (operator.and_, True, True),
+            (operator.and_, True, False),
+            (operator.or_, True, True),
+            (operator.or_, True, False),
+            (first, True, None),
+            (first, False, None),
+            (operator.gt, False, True),
+            (operator.gt, True, False),
+            (operator.gt, True, True),
+            (operator.eq, False, True),
+            (operator.eq, True, False),
+            (operator.eq, True, True),
+        )
 
-@opfunc
-def gtrr(registers, a, b):
-    return registers[a] > registers[b]
+OPFUNCS = tuple(OpFunc(*args) for args in OPFUNCS)
 
-@opfunc
-def eqir(registers, a, b):
-    return a == registers[b]
+def __call__(self, registers, a, b):
+    if self.areg:
+        a = registers[a]
+    if self.breg:
+        b = registers[b]
+    return self.func(a,b)
 
-@opfunc
-def eqri(registers, a, b):
-    return registers[a] == b
-
-@opfunc
-def eqrr(registers, a, b):
-    return registers[a] == registers[b]
+OpFunc.__call__ = __call__
+del __call__
     
 class Case:
     def __init__(self, before, operation, after):
