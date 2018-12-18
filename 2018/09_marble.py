@@ -4,16 +4,13 @@ import sys
 import re
 
 class Marble:
+    __slots__ = ('value', 'prev', 'next')
     def __init__(self, value):
         self.value = value
-        self.next = None
-        self.prev = None
     def drop(self):
         self.next.prev = self.prev
         self.prev.next = self.next
-        self.next = None
-        self.prev = None
-    def insert(self, m):
+    def add_next(self, m):
         m.next = self.next
         m.next.prev = m
         m.prev = self
@@ -26,7 +23,6 @@ class Game:
         m = Marble(0)
         self.current = m.next = m.prev = m
         self.rounds = 0
-        self.orig = m
     @property
     def num_players(self):
         return len(self.scores)
@@ -43,7 +39,7 @@ class Game:
         value = self.next_value
         if value % 23:
             m = Marble(value)
-            self.current.next.insert(m)
+            self.current.next.add_next(m)
             self.current = m
         else:
             pi = self.whose_turn
@@ -54,18 +50,6 @@ class Game:
         self.rounds += 1
     def max_score(self):
         return max(self.scores)
-    def desc(self):
-        print(f"{self.rounds} [{self.whose_turn}] ", end='')
-        c = self.orig
-        while True:
-            if c==self.current:
-                print(f"({c.value})".ljust(4), end='')
-            else:
-                print(f"{c.value}".ljust(4), end='')
-            c = c.next
-            if c==self.orig:
-                break
-        print()
 
 def main():
     line = sys.stdin.read().strip()
