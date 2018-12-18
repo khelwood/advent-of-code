@@ -68,6 +68,8 @@ class Area:
         trees.difference_update(new_yards)
         yards.update(new_yards)
         trees.update(new_trees)
+    def freeze(self):
+        return (frozenset(self.yards), frozenset(self.trees))
     def display(self):
         for y in range(self.height):
             print(''.join([self[x,y] for x in range(self.width)]))
@@ -77,9 +79,35 @@ def addp(a,b):
 
 def main():
     area = Area(sys.stdin)
-    for _ in range(10):
+    st = area.freeze()
+    states = [st]
+    state_index = {st:0}
+    for i in range(10):
         area.advance()
+        st = area.freeze()
+        states.append(st)
+        state_index[st] = i
     print("Resource value after 10 minutes:", area.num_trees*area.num_yards)
+    target = 10**9
+    repeat_start = None
+    repeat_end = None
+    for i in range(10,target):
+        area.advance()
+        st = area.freeze()
+        if st in state_index:
+            repeat_start = state_index[st]
+            repeat_end = i
+            break
+        state_index[st] = i
+        states.append(st)
+    print("Pattern repeats between", repeat_start, "and", repeat_end)
+    if repeat_end:
+        period = repeat_end - repeat_start
+        index = repeat_start + (target - repeat_start) % period
+        yards, trees = states[index]
+        print("Final result:", len(yards)*len(trees))
+    else:
+        print("Final result:", area.num_trees*area.num_yards)
 
 if __name__ == '__main__':
     main()
