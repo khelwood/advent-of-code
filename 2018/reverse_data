@@ -5,7 +5,7 @@ success:
 A+=E
 eloop:
 E+=1
-B=(B>C)
+B=(E>C)
 IF B SKIP
 SKIP
 END
@@ -20,6 +20,6 @@ B=(C==F)
 IF B SKIP
 GOTO eloop
 GOTO success
-init
+init:
 C=28
 GOTO main
