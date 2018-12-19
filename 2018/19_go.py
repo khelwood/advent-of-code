@@ -28,6 +28,8 @@ def read_commands():
         if m:
             ip = int(m.group(1))
             continue
+        line, _, _ = line.partition('#') # I added some comments - omit them
+        line = line.strip()
         m = re.match(COMMAND_PTN, line)
         if not m:
             raise ValueError(repr(line))
@@ -151,16 +153,17 @@ def explain_command(ip, i, command, varnames, num_commands):
 #    goto 1
 
 def main():
+    cheat = ('--nocheat' not in sys.argv[1:])
     ip,commands = read_commands()
     #return explain(ip, commands)
     
     registers = [0]*6
     print("Starting with registers[0] =", registers[0])
-    run(ip, commands, registers, cheat=True)
+    run(ip, commands, registers, cheat=cheat)
     print("Register 0:", registers[0])
     registers = [1] + [0]*5
     print("Starting with registers[0] =", registers[0])
-    run(ip, commands, registers, cheat=True)
+    run(ip, commands, registers, cheat=cheat)
     print("Register 0:", registers[0])    
 
 if __name__ == '__main__':

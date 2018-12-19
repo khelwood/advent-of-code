@@ -1,0 +1,25 @@
+GOTO init
+main:
+E=1
+success:
+A+=E
+eloop:
+E+=1
+B=(B>C)
+IF B SKIP
+SKIP
+END
+F=0
+floop:
+F+=E
+B=(C>F)
+IF B SKIP
+SKIP
+GOTO floop
+B=(C==F)
+IF B SKIP
+GOTO eloop
+GOTO success
+init
+C=28
+GOTO main
