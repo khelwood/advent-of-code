@@ -24,8 +24,8 @@ class TokenType(Enum):
         return cls._value2member_map_.get(value, TokenType.PATH)
 
 Token = namedtuple('Token', 'type depth content', defaults=(None,))
-    
-def lex(expression):
+
+def lex_iter(expression):
     path_began = None
     depth = 0
     for i,ch in enumerate(expression):
@@ -47,6 +47,9 @@ def lex(expression):
     if path_began is not None:
         path = expression[path_began:]
         yield Token(type=TokenType.PATH, depth=depth, content=path)
+
+def lex(expression):
+    return list(lex_iter(expression))
 
 def validate(tokens):
     # Check that every parenthesis is surrounding some alternatives
@@ -83,7 +86,7 @@ def token_split_chain(tokens):
                 yield current
                 current = None
     assert current is None
-    
+
 def follow(starts, tokens, doors):
     while tokens and tokens[0].type==TokenType.LPAREN:
         r = tokens.index(Token(TokenType.RPAREN, tokens[0].depth))
@@ -151,7 +154,7 @@ def display(doors, positions):
 
 def main():
     expression = sys.stdin.read().strip().lstrip('^').rstrip('$')
-    tokens = list(lex(expression))
+    tokens = lex(expression)
     validate(tokens)
     doors = defaultdict(set)
     positions = follow({(0,0)}, tokens, doors)
