@@ -109,10 +109,10 @@ def explain_command(ip, i, command, varnames, num_commands=None):
             return f"GOTO {vn[a]}*{vn[b]} + 1"
     if op==OpFunc.ADDI:
         if a==c:
-            return f"{vn[a]} += {b}"
+            return f"{vn[c]} += {b}"
         if a==ip:
-            return f"{vn[a]} = {i + b}"
-        return f"{vn[a]} = {vn[a]} + {b}"
+            return f"{vn[c]} = {i + b}"
+        return f"{vn[c]} = {vn[a]} + {b}"
     if op==OpFunc.ADDR:
         if a==c or b==c:
             other = a+b-c
