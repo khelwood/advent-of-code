@@ -81,10 +81,13 @@ def explain(ip, commands):
     varnames[ip] = '@'
     varnames = ''.join(varnames)
     num_commands = len(commands)
-    print("    #ip",ip)
+    print("#ip",ip)
+    cmdstr = [f'{c.func.name.lower()} {c.a} {c.b} {c.c}' for c in commands]
+    ml = max(map(len, cmdstr))
+    cmdstr = [c.ljust(ml) for c in cmdstr]
     for i,command in enumerate(commands):
-        print(str(i).rjust(2), ' ', explain_command(ip, i, command,
-                                                   varnames, num_commands))
+        print(cmdstr[i],'#', str(i).rjust(2),
+                explain_command(ip, i, command, varnames, num_commands))
 
 def explain_command(ip, i, command, varnames, num_commands=None):
     op = command.func
@@ -98,8 +101,7 @@ def explain_command(ip, i, command, varnames, num_commands=None):
         if op==OpFunc.ADDR:
             if a==ip or b==ip:
                 other = a + b - ip
-                return (f"GOTO {vn[other]} + {i+1}"
-                        f" // if {vn[other]} SKIP")
+                return (f"SKIP {vn[other]}")
             return f"GOTO {vn[a]} + {vn[b]} + 1"
         if op==OpFunc.SETI:
             return f"GOTO {a+1}"

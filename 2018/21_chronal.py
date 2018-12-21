@@ -2,30 +2,47 @@
 
 import sys
 
-from opfunc import read_commands, OpFunc
+from opfunc import read_commands
 
-def find_reg_eq(ip, commands, target):
+EMIT = object()
+
+def emit_targets(ip, commands):
     registers = [0]*6
+    targets = set()
     num_commands = len(commands)
     while 0 <= registers[ip] < num_commands:
         command = commands[registers[ip]]
-        if command.func==OpFunc.EQRR and target in (command.a, command.b):
-            other = command.a + command.b - target
-            return registers[other]
-        if command.func==OpFunc.EQRI and target==command.a:
-            return b
-        if command.func==OpFunc.EQIR and target==command.b:
-            return a
-        command(registers)
+        if command is EMIT:
+            target = registers[5]
+            if target in targets:
+                return
+            yield target
+            targets.add(target)
+            registers[2] = 0
+        else:
+            command(registers)
         registers[ip] += 1
+
+def shortcut(registers):
+    registers[2] = registers[4] // 256
+    registers[1] = 25
+
+def simplify(commands):
+    commands[17] = shortcut
+    for i in range(18,26):
+        commands[i] = None
+    commands[28] = EMIT
 
 def main():
     ip,commands = read_commands(sys.stdin)
-    a = find_reg_eq(ip, commands, 0)
-    if a is None:
-        print("Couldn't find a good value for register 0.")
-        return
-    print("Set register 0 to", a)
+    simplify(commands)
+    program = emit_targets(ip, commands)
+    a = next(program)
+    print("First halting value:", a)
+    for a in program:
+        #print(a, end=',')
+        pass
+    print("Last halting value:", a)
 
 if __name__ == '__main__':
     main()
