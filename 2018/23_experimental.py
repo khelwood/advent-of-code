@@ -87,7 +87,7 @@ def fast_directions(vx,vy,vz, scale):
         yield (dx*scale, dy*scale, dz*scale)
 
 def addp(a,b):
-  return (a[0]+b[0], a[1]+b[1], a[2]+b[2])
+    return (a[0]+b[0], a[1]+b[1], a[2]+b[2])
 
 def bring_in(pos, zone):
     try:
@@ -127,13 +127,17 @@ def main():
             best_count = count
             best = []
         best.append(corner)
-    print("Best count:", best_count)
     print("Best corners:", best)
-    best = next(iter(best))
-    nearby = BotZone((bot for bot in bots if bot.inrange(best)), best)
-    nearest = bring_in(best, nearby)
+    nearest = None
+    for start in best:
+        nearby = BotZone((bot for bot in bots if bot.inrange(start)), start)
+        pos = bring_in(start, nearby)
+        distance = sum(map(abs, pos))
+        if nearest is None or distance < nearest_distance:
+            nearest_distance = distance
+            nearest = pos
     print("Nearest:", nearest)
-    print("Distance from origin:", sum(map(abs, nearest)))
+    print("Distance from origin:", nearest_distance)
 
 if __name__ == '__main__':
     main()
