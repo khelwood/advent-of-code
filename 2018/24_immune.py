@@ -7,9 +7,9 @@ IMMUNE = 0
 INFECTION = 1
 
 class UnitGroup:
-    def __init__(self, number, hp, atk, atk_type, ini, weak, immune, team):
+    def __init__(self, number, unit_hp, atk, atk_type, ini, weak, immune, team):
         self.number = number
-        self.unit_hp = hp
+        self.unit_hp = unit_hp
         self.atk = atk
         self.atk_type = atk_type
         self.ini = ini
@@ -25,7 +25,10 @@ class UnitGroup:
         if dmg_type in self.weak:
             dmg *= 2
         units_lost = dmg // self.unit_hp
+        if units_lost==0:
+            return False
         self.number -= units_lost
+        return True
     @property
     def effective_power(self):
         n = self.number
@@ -44,6 +47,9 @@ class UnitGroup:
             if not targets:
                 return None
         return targets[0]
+    def with_boost(self, boost):
+        return UnitGroup(self.number, self.unit_hp, self.atk+boost,
+                self.atk_type, self.ini, self.weak, self.immune, self.team)
     #number, hp, atk, atk_type, ini, weak, immune, tea
     def __repr__(self):
         return (f"UnitGroup({self.number}, {self.unit_hp}, "
@@ -114,22 +120,48 @@ def fight_round(teams):
         unit.target = target
         if target:
             enemies.remove(target)
+    any_damage = False
     for unit in iter_units_initiative(*teams):
         if unit.target and unit.active:
-            unit.target.damage(unit.effective_power, unit.atk_type)
+            if unit.target.damage(unit.effective_power, unit.atk_type):
+                any_damage = True
+    if not any_damage:
+        return False
     for i in (IMMUNE, INFECTION):
         teams[i] = [x for x in teams[i] if x.active]
+    return True
 
-def run_fight(teams):
+def run_fight(original, boost):
+    teams = [None, None]
+    teams[IMMUNE] = [x.with_boost(boost) for x in original[IMMUNE]]
+    teams[INFECTION] = [x.with_boost(0) for x in original[INFECTION]]
     while all(teams):
-        fight_round(teams)
+        if not fight_round(teams):
+            break
+    return teams
         
 def main():
-    teams = read_units(sys.stdin)
-    run_fight(teams)
+    team_names = ['Immune system', 'Infection']
+    original = read_units(sys.stdin)
+    teams = run_fight(original, 0)
     winner = INFECTION if teams[INFECTION] else IMMUNE
-    print("Winning army:", ['Immune', 'Infection'][winner])
+    print("Winning army:", team_names[winner])
     print("Remaining units:", sum(u.number for u in teams[winner]))
+    winning = 10_000
+    losing = 0
+    while winning > losing + 1:
+        boost = (winning + losing) // 2
+        teams = run_fight(original, boost)
+        if teams[INFECTION]:
+            losing = boost
+        else:
+            winning = boost
+    print("Selected boost:", winning)
+    teams = run_fight(original, winning)
+    winner = INFECTION if teams[INFECTION] else IMMUNE
+    print("Winning army:", team_names[winner])
+    print("Remaining units:", sum(u.number for u in teams[winner]))
+
 
 if __name__ == '__main__':
     main()
