@@ -3,27 +3,16 @@
 import sys
 import re
 import itertools
-from collections import Counter
+from collections import Counter, namedtuple
 
-CLAIM_PTN = re.compile('# % @ % , % : % x % $'
-                           .replace(' ', r'\s*')
-                           .replace('%', r'(\d+)'))
-
-class Claim:
-    def __init__(self, id, left, top, width, height):
-        self.id = id
-        self.left = left
-        self.top = top
-        self.width = width
-        self.height = height
-    def __iter__(self):
-        return itertools.product(
+Claim = namedtuple('Claim', 'id left top width height')
+Claim.__iter__ = lambda self : itertools.product(
             range(self.left, self.left + self.width),
             range(self.top, self.top + self.height)
         )
 
-def make_claim(line):
-    m = CLAIM_PTN.match(line)
+def make_claim(line, ptn=re.compile('#%@%,%:%x%$'.replace('%', r'(\d+)'))):
+    m = ptn.match(re.sub(r'\s+','',line))
     if not m:
         raise ValueError(repr(line))
     return Claim(*map(int, m.groups()))

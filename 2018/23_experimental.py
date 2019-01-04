@@ -12,9 +12,8 @@ def manhattan(a,b):
     return abs(a[0]-b[0]) + abs(a[1]-b[1]) + abs(a[2]-b[2])
 
 def read_bot(line):
-    line = line.strip()
-    m = re.match('pos = < # , # , # > , r = # $'
-                     .replace(' ',r'\s*').replace('#', r'(-?\d+)'), line)
+    m = re.match('pos=<#,#,#>,r=#$'.replace('#', r'(-?\d+)'),
+                     re.sub(r'\s+','', line))
     if not m:
         raise ValueError(repr(line))
     return Nanobot(*map(int, m.groups()))
