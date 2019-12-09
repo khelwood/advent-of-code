@@ -42,22 +42,7 @@ class Program:
             raise ProgramInputError()
         return self.input_values.pop(0)
     def get_value(self, index):
-        mixed_op = self[self.pos]
-        value = self[self.pos + index]
-        if index==1:
-            d = 100
-        elif index==2:
-            d = 1000
-        elif index==3:
-            d = 10_000
-        else:
-            raise ValueError("Cannot get value for index %s"%index)
-        mode = (mixed_op//d)%10
-        if mode==POS_MODE:
-            return self[value]
-        if mode==VALUE_MODE:
-            return value
-        return self[self.relative_base + value]
+        return self[self.get_pos(index)]
     def get_pos(self, index):
         mixed_op = self[self.pos]
         if index==1:
