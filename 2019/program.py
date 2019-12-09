@@ -2,6 +2,7 @@ import operator
 
 POS_MODE = 0
 VALUE_MODE = 1
+RELATIVE_MODE = 2
 
 ADD_OP = 1
 MUL_OP = 2
@@ -11,6 +12,7 @@ JIT_OP = 5
 JIF_OP = 6
 LT_OP = 7
 EQ_OP = 8
+RBO_OP = 9
 END_OP = 99
 
 class Program:
@@ -20,17 +22,24 @@ class Program:
         self.output_values = []
         self.input_values = input_values
         self.halted = False
+        self.relative_base = 0
+        self.extra_data = {}
     def __getitem__(self, index):
-        return self.data[index]
+        if index < len(self.data):
+            return self.data[index]
+        return self.extra_data.get(index, 0)
     def __setitem__(self, index, value):
-        self.data[index] = value
+        if index < len(self.data):
+            self.data[index] = value
+        else:
+            self.extra_data[index] = value
     def load_input(self, values):
         self.input_values = input_values
     def emit(self, value):
         self.output_values.append(value)
     def next_input(self):
         if not self.input_values:
-            raise OutOfInputError()
+            raise ProgramInputError()
         return self.input_values.pop(0)
     def get_value(self, index):
         mixed_op = self[self.pos]
@@ -39,13 +48,32 @@ class Program:
             d = 100
         elif index==2:
             d = 1000
+        elif index==3:
+            d = 10_000
         else:
             raise ValueError("Cannot get value for index %s"%index)
-        if (mixed_op//d)%10==VALUE_MODE:
+        mode = (mixed_op//d)%10
+        if mode==POS_MODE:
+            return self[value]
+        if mode==VALUE_MODE:
             return value
-        return self[value]
+        return self[self.relative_base + value]
     def get_pos(self, index):
-        return self[self.pos + index]
+        mixed_op = self[self.pos]
+        if index==1:
+            d = 100
+        elif index==2:
+            d = 1000
+        elif index==3:
+            d = 10_000
+        else:
+            raise ValueError("Cannot get pos for index %s"%index)
+        mode = (mixed_op//d)%10
+        if mode==POS_MODE:
+            return self[self.pos + index]
+        if mode==VALUE_MODE:
+            return self.pos + index
+        return self[self.pos + index] + self.relative_base
     def binop(self, func):
         x = self.get_value(1)
         y = self.get_value(2)
@@ -74,6 +102,9 @@ class Program:
         self.pos += 2
     def end(self):
         self.pos = -1
+    def rboffset(self):
+        self.relative_base += self.get_value(1)
+        self.pos += 2
     def perform_command(self):
         OP_FUNC[self[self.pos]%100](self)
     def execute(self):
@@ -98,6 +129,7 @@ OP_FUNC = {
     JIF_OP: (lambda prog: prog.jumpif(False)),
     LT_OP: (lambda prog: prog.cmpop(operator.lt)),
     EQ_OP: (lambda prog: prog.cmpop(operator.eq)),
+    RBO_OP: Program.rboffset,
 }
 
 def parse_program_input(text):
