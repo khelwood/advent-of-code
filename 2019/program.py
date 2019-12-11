@@ -24,6 +24,8 @@ class Program:
         self.halted = False
         self.relative_base = 0
         self.extra_data = {}
+        self.input_func = None
+        self.output_func = None
     def __getitem__(self, index):
         if index < len(self.data):
             return self.data[index]
@@ -37,7 +39,11 @@ class Program:
         self.input_values = input_values
     def emit(self, value):
         self.output_values.append(value)
+        if self.output_func:
+            self.output_func(value)
     def next_input(self):
+        if self.input_func:
+            return self.input_func()
         if not self.input_values:
             raise ProgramInputError()
         return self.input_values.pop(0)
