@@ -59,10 +59,30 @@ def ore_needed(reactions, fuel):
         del require[name]
     return ore
 
+def fuel_search(reactions, ore, least, most):
+    while ore_needed(reactions, least) > ore:
+        least //= 2
+    while ore_needed(reactions, most) <= ore:
+        most *= 2
+    while least + 1 < most:
+        mid = (least + most) // 2
+        mid_ore = ore_needed(reactions, mid)
+        if mid_ore > ore:
+            most = mid
+        else:
+            least = mid
+    return least
+
+
 def main():
     reactions = {r.output.name: r for r in parse_reactions(sys.stdin)}
     ore_per_fuel = ore_needed(reactions, 1)
     print("Ore needed for one fuel:", ore_per_fuel)
+
+    ore_available = 1_000_000_000_000
+    guess = ore_available // ore_per_fuel
+    most_fuel = fuel_search(reactions, ore_available, guess, 2*guess)
+    print("Amout of fuel from a trillion ore:", most_fuel)
 
 if __name__ == '__main__':
     main()
