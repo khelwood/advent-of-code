@@ -82,7 +82,7 @@ def main():
     ore_available = 1_000_000_000_000
     guess = ore_available // ore_per_fuel
     most_fuel = fuel_search(reactions, ore_available, guess, 2*guess)
-    print("Amout of fuel from a trillion ore:", most_fuel)
+    print("Amount of fuel from a trillion ore:", most_fuel)
 
 if __name__ == '__main__':
     main()
