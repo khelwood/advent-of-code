@@ -2,7 +2,7 @@
 
 import sys
 import time
-from program import Program, parse_program_input
+from intcode import Program, parse_program_input
 
 EMPTY_N = 0
 WALL_N = 1

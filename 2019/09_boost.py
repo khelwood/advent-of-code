@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from program import Program, parse_program_input
+from intcode import Program, parse_program_input
 
 def main():
     data = parse_program_input(sys.stdin.read())

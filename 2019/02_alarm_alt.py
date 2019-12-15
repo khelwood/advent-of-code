@@ -3,7 +3,7 @@
 import sys
 import itertools
 
-from program import parse_program_input, Program
+from intcode import parse_program_input, Program
 
 def find_noun_verb(data, target):
     for noun,verb in itertools.product(range(100), repeat=2):

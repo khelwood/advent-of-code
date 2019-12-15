@@ -2,7 +2,7 @@
 
 import sys
 from itertools import permutations
-from program import Program, parse_program_input
+from intcode import Program, parse_program_input
 
 def find_highest_output(prog_input):
     highest = 0

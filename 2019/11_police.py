@@ -2,7 +2,7 @@
 
 import sys
 
-from program import Program, parse_program_input
+from intcode import Program, parse_program_input
 
 BLACK_N = 0
 WHITE_N = 1
