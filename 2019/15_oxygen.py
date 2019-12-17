@@ -68,7 +68,7 @@ class Maze:
         guystring = TARGET_GUY_S if guy==target else GUY_S
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
-                print(guystring if (x,y)==guy else 'O' if (x,y)==ORIGIN
+                print(guystring if (x,y)==guy else 'S' if (x,y)==ORIGIN
                           else self[x,y], end='')
             print()
 
@@ -130,21 +130,21 @@ class Director:
         self.program.execute()
     def render(self):
         return self.maze.render(self.guy, self.target)
-    def reset_steps(self, start):
-        steps = self.steps
-        steps[start] = 0
-        running = True
-        while running:
-            running = False
-            for p,v in steps.items():
-                most = v+1
-                for adj in adjacency(p):
-                    adjv = steps.get(adj)
-                    if adjv is None:
-                        continue
-                    if adjv is not None and adjv > most:
-                        steps[adj] = most
-                        running = True
+    def flood_steps(self, start):
+        next_steps = [start]
+        reachable = self.steps
+        steps = {}
+        count = 0
+        while next_steps:
+            current_steps = next_steps
+            next_steps = []
+            for pos in current_steps:
+                steps[pos] = count
+                for adj in adjacency(pos):
+                    if adj in reachable and adj not in steps:
+                        next_steps.append(adj)
+            count += 1
+        self.steps = steps
 
 def plot_route(steps, src, dest):
     if manhattan(src, dest)==1:
@@ -183,7 +183,7 @@ def main():
         print(e)
     game.render()
     print("Distance to target:", game.steps[game.target])
-    game.reset_steps(game.target)
+    game.flood_steps(game.target)
     print("Time to fill with oxygen:", max(game.steps.values()))
 
 if __name__ == '__main__':
