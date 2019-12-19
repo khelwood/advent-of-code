@@ -105,6 +105,16 @@ class Program:
         op = len(self.output_values)
         while self.pos >= 0 and len(self.output_values)==op:
             self.perform_command()
+    def run_input(self, input_values):
+        if isinstance(input_values, str):
+            input_values = map(ord, input_values)
+        if self.input_values:
+            self.input_values.extend(input_values)
+        else:
+            self.input_values = list(input_values)
+        while (self.pos >=0 and
+               (self.input_values or self[self.pos]%100 != INPUT_OP)):
+            self.perform_command()
 
 class ProgramInputError(Exception):
     pass
