@@ -2,23 +2,18 @@
 
 import sys
 import re
+from collections import namedtuple
 
-class Entry:
-    def __init__(self, num1, num2, char, string):
-        self.num1 = num1
-        self.num2 = num2
-        self.char = char
-        self.string = string
-    @property
-    def alpha(self):
-        return self.num1 <= self.string.count(self.char) <= self.num2
-    @property
-    def beta(self):
-        return ((self.string[self.num1-1]==self.char)
-                    ^(self.string[self.num2-1]==self.char))
+Entry = namedtuple('Entry', 'num1 num2 char string')
 
-LINE_PATTERN = re.compile('^(#)-(#) (C): (C+)$'.replace('#', r'\d+')
-                              .replace('C', r'\w'))
+def check_one(entry):
+    return entry.num1 <= entry.string.count(entry.char) <= entry.num2
+
+def check_two(entry):
+    return ((entry.string[entry.num1-1]==entry.char)
+            ^(entry.string[entry.num2-1]==entry.char))
+
+LINE_PATTERN = re.compile(r'^(\d+)-(\d+) (\w): (\w+)$')
     
 def parse(line):
     m = LINE_PATTERN.match(line)
@@ -27,9 +22,9 @@ def parse(line):
 
 def main():
     entries = [parse(line) for line in sys.stdin.read().splitlines()]
-    one_count = sum(entry.alpha for entry in entries)
+    one_count = sum(map(check_one, entries))
     print("Part one:", one_count)
-    two_count = sum(entry.beta for entry in entries)
+    two_count = sum(map(check_two, entries))
     print("Part two:", two_count)
 
 if __name__ == '__main__':
