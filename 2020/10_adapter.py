@@ -7,20 +7,25 @@ from collections import Counter
 def read_sorted_integers():
     return tuple(sorted(map(int, sys.stdin)))
 
-def count_arrangements(current, joltages, target, cache={}):
-    key = (current, joltages, target)
-    v = cache.get(key)
-    if v is not None:
-        return v
-    count = 0
-    if target <= current + 3:
-        count += 1
-    for i,first in enumerate(joltages):
-        if first > current + 3:
+def count_arrangements(joltages):
+    n = len(joltages)
+    counts = [0] * n
+    counts[-1] = 1
+    for i in range(n-2, -1, -1):
+        boundary = joltages[i] + 3
+        c = 0
+        for j in range(i+1, n):
+            if joltages[j] > boundary:
+                break
+            c += counts[j]
+        counts[i] = c
+    boundary = 3
+    c = 0
+    for j in range(n):
+        if joltages[j] > boundary:
             break
-        count += count_arrangements(first, joltages[i+1:], target)
-    cache[key] = count
-    return count
+        c += counts[j]
+    return c
 
 def main():
     joltages = read_sorted_integers()
@@ -34,10 +39,7 @@ def main():
     jumps[3] += 1 # device joltage = highest + 3
     print(jumps)
     print("(1 jolt jumps) * (3 jolt jumps) =", jumps[1]*jumps[3])
-
-    print("Number of arrangements:",
-              count_arrangements(0, joltages, joltages[-1]+3))
-
+    print("Number of arrangements:", count_arrangements(joltages))
 
 if __name__ == '__main__':
     main()
