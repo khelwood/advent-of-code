@@ -43,11 +43,10 @@ class Layout:
     def count(self, value):
         return sum(v==value for v in self.grid.values())
 
-    def advance_grid(self):
-        func = self.next_value
-        self.grid = {pos:func(pos) for pos in self.grid}
+    def advance_grid(self, threshold):
+        self.grid = {pos:self.next_value(pos, threshold) for pos in self.grid}
 
-    def next_value(self, pos):
+    def next_value(self, pos, threshold):
         grid = self.grid
         value = grid[pos]
         if value==EMPTY:
@@ -55,7 +54,7 @@ class Layout:
                 return value
             return OCCUPIED
         if value==OCCUPIED:
-            req = self.threshold
+            req = threshold
             for p in self.adj[pos]:
                 if grid[p]==OCCUPIED:
                     req -= 1
@@ -81,21 +80,19 @@ def parse_layout(string):
 def main():
     layout = parse_layout(sys.stdin.read().strip())
     original_grid = dict(layout.grid)
-    layout.threshold = 4
     layout.find_adjacent_seats(adjacent_simple)
     while True:
         old = layout.grid
-        layout.advance_grid()
+        layout.advance_grid(4)
         if layout.grid==old:
             break
     print("Number of occupied seats (simple):", layout.count(OCCUPIED))
 
     layout.grid = original_grid
-    layout.threshold = 5
     layout.find_adjacent_seats(adjacent_long)
     while True:
         old = layout.grid
-        layout.advance_grid()
+        layout.advance_grid(5)
         if layout.grid==old:
             break
     print("Number of occupied seats (long):", layout.count(OCCUPIED))
