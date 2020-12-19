@@ -3,21 +3,14 @@
 import sys
 import re
 
-def parse_input():
-    ptn = re.compile(r'^(\d+):\s*(.+)$')
-    rulebook = {}
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            break
-        m = re.match(ptn, line)
-        index = int(m.group(1))
-        rule = m.group(2)
-        rulebook[index] = tuple(lex(rule))
-    codes = list(map(str.strip, sys.stdin))
-    assert all(i in rulebook for i in range(len(rulebook)))
-    rulebook = [rulebook[k] for k in sorted(rulebook)]
-    return rulebook, codes
+T_OR = '|'
+T_CH = 'C'
+T_SEQ = '+'
+T_INT = '#'
+
+from collections import namedtuple
+
+Node = namedtuple('Node', 'type value')
 
 def rindex(seq, value, start=0, end=None):
     if end is None:
@@ -35,36 +28,47 @@ def find(seq, value, start=0, end=None):
             return i
     return -1
 
-def can_concrete(rule, rulebook):
-    return all(isinstance(rulebook[tok], str)
-                for tok in rule if isinstance(tok, int))
+def match(typ, value, code, rulebook):
+    if typ==T_CH:
+        if code and code[0]==value:
+            yield 1
+        return
+    if typ==T_SEQ:
+        if len(value)==0:
+            yield 0
+            return
+        first = value[0]
+        firstmatch = match(first.type, first.value, code, rulebook)
+        if len(value)==1:
+            yield from firstmatch
+        else:
+            rest = value[1:]
+            for c in firstmatch:
+                for r in match(typ, rest, code[c:], rulebook):
+                    yield c+r
+        return
+    if typ==T_OR:
+        for val in value:
+            yield from match(val.type, val.value, code, rulebook)
+        return
+    if typ==T_INT:
+        rule = rulebook[value]
+        yield from match(rule.type, rule.value, code, rulebook)
+        return
 
-def concrete_rules(rulebook):
-    improved = False
-    for i,rule in enumerate(rulebook):
-        if not isinstance(rule, str) and can_concrete(rule, rulebook):
-            rulebook[i] = concrete(rule, rulebook)
-            improved = True
-    return improved
-
-def concrete(rule, rulebook):
-    if len(rule)==1:
-        tok, = rule
-        if isinstance(tok, str):
-            return tok
-        return rulebook[tok]
-    i = find(rule, '|')
-    if i >= 0:
-        return (f'({concrete(rule[:i], rulebook)}|'
-                f'{concrete(rule[i+1:], rulebook)})')
-    return '('+''.join([rulebook[tok] for tok in rule])+')'
+def match_rule(rule, rulebook, code):
+    lc = len(code)
+    for n in match(rule.type, rule.value, code, rulebook):
+        if n==lc:
+            return True
+    return False
 
 def lex(rule):
     i = 0
     lr = len(rule)
     while i < lr:
         ch = rule[i]
-        if ch in '()|':
+        if ch=='|':
             yield ch
             i += 1
         elif ch.isdigit():
@@ -82,15 +86,44 @@ def lex(rule):
             i += 1
         else:
             raise ValueError(repr(rule))
-    
+
+def assemble(tokens):
+    i = find(tokens, '|')
+    if i >= 0:
+        return Node(T_OR, [assemble(tokens[:i]), assemble(tokens[i+1:])])
+    if len(tokens)==1:
+        token, = tokens
+        typ = T_INT if isinstance(token, int) else T_CH
+        return Node(typ, token)
+    return Node(T_SEQ, [assemble([tok]) for tok in tokens])
+
+def parse_input():
+    ptn = re.compile(r'^(\d+):\s*(.+)$')
+    rulebook = {}
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            break
+        m = re.match(ptn, line)
+        index = int(m.group(1))
+        rule = m.group(2)
+        tokens = list(lex(rule))
+        node = assemble(tokens)
+        rulebook[index] = node
+    codes = list(map(str.strip, sys.stdin))
+    assert all(i in rulebook for i in range(len(rulebook)))
+    rulebook = [rulebook[k] for k in sorted(rulebook)]
+    return rulebook, codes
 
 def main():
     rulebook, codes = parse_input()
-    while concrete_rules(rulebook):
-        pass
-    main_rule = re.compile('^(' + rulebook[0] + ')$')
-    match_count = sum(re.match(main_rule, code) is not None for code in codes)
-    print("Match count:", match_count)
+    rule = rulebook[0]
+    total = sum(match_rule(rule, rulebook, code) for code in codes)
+    print("Matches (no loops):", total)
+    rulebook[8] = assemble(list(lex('42 | 42 8')))
+    rulebook[11] = assemble(list(lex('42 31 | 42 11 31')))
+    total = sum(match_rule(rule, rulebook, code) for code in codes)
+    print("Matches (with loops):", total)
 
 if __name__ == '__main__':
     main()
