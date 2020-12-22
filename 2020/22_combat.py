@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-from collections import deque
 
 class Player:
     def __init__(self, name, cards=None):
