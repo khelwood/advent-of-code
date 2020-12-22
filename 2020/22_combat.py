@@ -6,9 +6,6 @@ class Player:
     def __init__(self, name, cards=None):
         self.name = name
         self.cards = cards or []
-    @property
-    def out(self):
-        return not(self.cards)
     def __len__(self):
         return len(self.cards)
     def push(self, card):
