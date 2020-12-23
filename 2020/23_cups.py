@@ -1,56 +1,88 @@
 #!/usr/bin/env python3
 
 import sys
+import itertools
 
 class Cups:
-    def __init__(self, values):
-        self.values = values
+    def __init__(self, values, size=None):
+        path = [None]*((size or len(values))+1)
+        last = 0
+        for v in values:
+            path[last] = v
+            last = v
+        path[last] = path[0]
+        self.path = path
+
+    def __iter__(self):
+        path = self.path
+        cur = path[0]
+        yield cur
+        v = path[cur]
+        while v != cur:
+            yield v
+            v = path[v]
 
     def __repr__(self):
-        return ' '.join(
-            f'({v})' if i==0 else str(v) for (i,v) in enumerate(self.values)
-        )
+        return ' '.join(map(str, self))
 
-    def move(self):
-        values = self.values
-        label = values[0]
-        pickup = values[1:4]
-        del values[1:4]
-        destindex = -1
-        destlabel = -1
-        maxlabel = -1
-        maxindex = -1
-        for i,c in enumerate(values):
-            if destlabel < c < label:
-                destindex = i
-                destlabel = c
-            if maxlabel < c:
-                maxindex = i
-                maxlabel = c
-        if destindex < 0:
-            destindex = maxindex
-        destindex += 1
-        values[destindex:destindex] = pickup
-        prev = values.index(label)
-        current = (prev+1)%len(values)
-        self.values = values[current:] + values[:current]
-
-    def __len__(self):
-        return len(self.values)
+    def __str__(self):
+        lines = [
+            ' '.join(map(str, range(len(self.path)))),
+            ' '.join('↓' for _ in self.path),
+            ' '.join(map(str, self.path)),
+            'Giving:',
+            ' '.join(map(str, self)),
+        ]
+        return '\n'.join(lines)
 
     @property
-    def output(self):
-        i = self.values.index(1)
-        return ''.join(map(str, self.values[i+1:] + self.values[:i]))
-            
+    def code(self):
+        path = self.path
+        vals = []
+        v = path[1]
+        while v != 1:
+            vals.append(v)
+            v = path[v]
+        return ''.join(map(str, vals))
+
+    def move(self):
+        path = self.path
+        cur = path[0]
+        first = path[cur]
+        second = path[first]
+        third = path[second]
+        n = len(path)-1
+        skip = {first, second, third}
+        dest = (cur-1)
+        if dest < 1:
+            dest = n
+        while dest in skip:
+            dest -= 1
+            if dest < 1:
+                dest = n
+        path[cur] = path[third]
+        path[third] = path[dest]
+        path[dest] = first
+        path[0] = path[cur]
+
 
 def main():
     arg = sys.argv[1] if len(sys.argv)>1 else input()
     initial = tuple(map(int, arg))
-    cups = Cups(list(initial))
+    cups = Cups(initial)
     for _ in range(100):
         cups.move()
-    print(cups.output)
+    print(cups.code)
+    M = 1_000_000
+    cups = Cups(itertools.chain(initial, range(10, M+1)), size=M)
+    for i in range(100):
+        print(f' {i}%', end='\r',flush=True)
+        for _ in range(100_000):
+            cups.move()
+    print('100 %')
+    a = cups.path[1]
+    b = cups.path[a]
+    print(a*b)
 
 
 if __name__ == '__main__':
