@@ -35,23 +35,15 @@ def flood_fill(g, p, fill, wid, hei):
         if p in g:
             continue
         px,py = p
-        for x in range(px, -1, -1):
-            if (x,py) in g:
-                break
-            g[x,py] = fill
-            if py > 0 and (x,py-1) not in g:
-                stack.append((x,py-1))
-            if py < hei-1 and (x,py+1) not in g:
-                stack.append((x,py+1))
-        for x in range(px+1, wid):
-            if (x,py) in g:
-                break
-            g[x,py] = fill
-            if py > 0 and (x,py-1) not in g:
-                stack.append((x,py-1))
-            if py < hei-1 and (x,py+1) not in g:
-                stack.append((x,py+1))
-
+        for ran in (range(px, -1, -1), range(px+1, wid)):
+            for x in ran:
+                if (x,py) in g:
+                    break
+                g[x,py] = fill
+                if py > 0 and (x,py-1) not in g:
+                    stack.append((x,py-1))
+                if py < hei-1 and (x,py+1) not in g:
+                    stack.append((x,py+1))
 
 def flood_fill_zones(grid, wid, hei, low_points):
     walls = [p for (p,h) in grid.items() if h==9]
