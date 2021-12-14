@@ -10,33 +10,47 @@ def read_data():
             (line.partition('->') for line in lines if '->' in line)}
     return template, rules
 
-def grow(polymer, rules):
-    i = 1
-    while i < len(polymer):
-        key = polymer[i-1] + polymer[i]
-        value = rules.get(key)
+def grow(pairs, rules):
+    new_pairs = Counter()
+    for pair, count in pairs.items():
+        value = rules.get(pair)
         if value:
-            polymer.insert(i, value)
-            i += 1
-        i += 1
+            a,b = pair
+            new_pairs[a+value] += count
+            new_pairs[value+b] += count
+        else:
+            new_pairs[pair] += count
+    return new_pairs
 
-def freqdiff(polymer):
-    counter = Counter(polymer)
-    most = max(counter.values())
-    least = min(counter.values())
-    return most-least
+
+def freqdiff(pairs, first, last):
+    counter = Counter()
+    for pair, count in pairs.items():
+        a,b = pair
+        counter[a] += count
+        counter[b] += count
+    counter[first] += 1
+    counter[last] += 1
+    return (max(counter.values()) - min(counter.values()))//2
+
+def compile_pairs(template):
+    pairs = Counter()
+    for i in range(len(template)-1):
+        pair = template[i] + template[i+1]
+        pairs[pair] += 1
+    return pairs
 
 def main():
     template, rules = read_data()
-    polymer = list(template)
+    first = template[0]
+    last = template[-1]
+    pairs = compile_pairs(template)
     for _ in range(10):
-        grow(polymer, rules)
-    print("After 10: most-least:", freqdiff(polymer))
-    for i in range(10,40):
-        print(i,end='\r',flush=True)
-        grow(polymer, rules)
-    print("After 40: most-least:", freqdiff(polymer))
-
+        pairs = grow(pairs, rules)
+    print("After 10: most-least:", freqdiff(pairs, first, last))
+    for _ in range(10,40):
+        pairs = grow(pairs, rules)
+    print("After 40: most-least:", freqdiff(pairs, first, last))
 
 if __name__ == '__main__':
     main()
