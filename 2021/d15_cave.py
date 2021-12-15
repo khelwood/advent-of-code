@@ -3,6 +3,26 @@
 import sys
 import bisect
 
+class TileGrid:
+    def __init__(self, grid, size):
+        self.grid = grid
+        self.wid, self.hei = size
+    def get(self, pos):
+        x,y = pos
+        if x < 0 or y < 0:
+            return None
+        hor = x//self.wid
+        if hor >= 5:
+            return None
+        ver = y//self.hei
+        if ver >= 5:
+            return None
+        risk = self.grid[x%self.wid, y%self.hei]
+        return (risk + hor + ver + 8)%9 + 1
+    @property
+    def size(self):
+        return (5*self.wid, 5*self.hei)
+
 def neighbours(p):
     x,y = p
     yield (x+1,y)
@@ -36,17 +56,17 @@ def least_path(grid, size):
             fastest_to[nbr] = new_score
             new_path = path + (nbr,)
             if nbr==target:
-                return (new_path, score+risk)
+                return (new_path, new_score)
             state = (new_score, new_path, visited.union((nbr,)))
             bisect.insort_left(states, state)
-
 
 def main():
     grid, size = read_grid()
     path,risk = least_path(grid, size)
-    print("Least risk:", risk)
-
-
+    print("Small grid least risk:", risk)
+    large_grid = TileGrid(grid, size)
+    path, risk = least_path(large_grid, large_grid.size)
+    print("Large grid least risk:", risk)
 
 if __name__ == '__main__':
     main()
