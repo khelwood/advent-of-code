@@ -40,14 +40,14 @@ def read_grid():
 def least_path(grid, size):
     start = (0,0)
     target = (size[0]-1, size[1]-1)
-    initial_state = (0, (start,), frozenset((start,)))
+    initial_state = (0, (start,))
     states = [initial_state]
     fastest_to = {start:0}
     while states:
-        score, path, visited = states.pop(0)
+        score, path = states.pop(0)
         for nbr in neighbours(path[-1]):
             risk = grid.get(nbr)
-            if risk is None or nbr in visited:
+            if risk is None:
                 continue
             new_score = score + risk
             f = fastest_to.get(nbr)
@@ -57,7 +57,7 @@ def least_path(grid, size):
             new_path = path + (nbr,)
             if nbr==target:
                 return (new_path, new_score)
-            state = (new_score, new_path, visited.union((nbr,)))
+            state = (new_score, new_path)
             bisect.insort_left(states, state)
 
 def main():
