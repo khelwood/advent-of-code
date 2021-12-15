@@ -40,12 +40,12 @@ def read_grid():
 def least_path(grid, size):
     start = (0,0)
     target = (size[0]-1, size[1]-1)
-    initial_state = (0, (start,))
+    initial_state = (0, start)
     states = [initial_state]
     fastest_to = {start:0}
     while states:
-        score, path = states.pop(0)
-        for nbr in neighbours(path[-1]):
+        score, pos = states.pop(0)
+        for nbr in neighbours(pos):
             risk = grid.get(nbr)
             if risk is None:
                 continue
@@ -54,18 +54,17 @@ def least_path(grid, size):
             if f is not None and f <= new_score:
                 continue
             fastest_to[nbr] = new_score
-            new_path = path + (nbr,)
             if nbr==target:
-                return (new_path, new_score)
-            state = (new_score, new_path)
+                return new_score
+            state = (new_score, nbr)
             bisect.insort_left(states, state)
 
 def main():
     grid, size = read_grid()
-    path,risk = least_path(grid, size)
+    risk = least_path(grid, size)
     print("Small grid least risk:", risk)
     large_grid = TileGrid(grid, size)
-    path, risk = least_path(large_grid, large_grid.size)
+    risk = least_path(large_grid, large_grid.size)
     print("Large grid least risk:", risk)
 
 if __name__ == '__main__':
