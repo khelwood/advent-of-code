@@ -68,7 +68,7 @@ def find_vxs(tx0, tx1):
     for vx0 in range(tx1+1):
         x = 0
         vx = vx0
-        while vx < tx1 and (vx > 0 or vx >= tx0):
+        while vx <= tx1 and (vx > 0 or vx >= tx0):
             if tx0 <= x <= tx1:
                 possible_vx.add(vx0)
                 break
