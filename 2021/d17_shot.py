@@ -46,6 +46,19 @@ def hope(pos, vel, target):
         return False
     return True
 
+def find_vys(ty0, ty1):
+    possible_vy = set()
+    for vy0 in range(min(1, ty0), max(abs(ty0), abs(ty1))):
+        y = 0
+        vy = vy0
+        while vy > 0 or y >= ty0:
+            if ty0 <= y <= ty1:
+                possible_vy.add(vy0)
+                break
+            y += vy
+            vy -= 1
+    return possible_vy
+
 def update_vel(v):
     vx,vy = v
     if vx > 0:
@@ -58,9 +71,9 @@ def main():
     target = read_target()
     best_height = 0
     count = 0
-    yrange = range(min(1, target.y0), max(abs(target.y0), abs(target.y1)))
+    vys = find_vys(target.y0, target.y1)
     for x in range(target.x1+1):
-        for y in yrange:
+        for y in vys:
             h = track_path(target, (x,y))
             if h >= 0:
                 count += 1
@@ -68,7 +81,6 @@ def main():
     print("best height:", best_height)
     print("count:", count)
 
-# Count: 4656 too low
 
 if __name__ == '__main__':
     main()
