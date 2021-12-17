@@ -36,9 +36,13 @@ def track_path(target, vel):
     return -1
 
 def hope(pos, vel, target):
-    if pos[0] > target.x1:
+    px,py = pos
+    vx,vy = vel
+    if px > target.x1:
         return False
-    if vel[1] <= 0 and pos[1] < target.y0:
+    if vx <= 0 and px < target.x0:
+        return False
+    if vy <= 0 and py < target.y0:
         return False
     return True
 
