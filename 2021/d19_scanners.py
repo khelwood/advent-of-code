@@ -3,14 +3,12 @@
 import sys
 
 from itertools import combinations
-from typing import NamedTuple
 from collections import defaultdict
 from ast import literal_eval as leval
 
-class Point(NamedTuple):
-    x:int
-    y:int
-    z:int
+class Point(tuple):
+    def __new__(cls, *args):
+        return tuple.__new__(cls, args)
 
     def __add__(self, other):
         return Point(self[0]+other[0], self[1]+other[1], self[2]+other[2])
@@ -20,10 +18,6 @@ class Point(NamedTuple):
         return Point(-self[0], -self[1], -self[2])
     def __mul__(self, other):
         return self[0]*other[0] + self[1]*other[1] + self[2]*other[2]
-    def abs(self):
-        return Point(abs(self[0]), abs(self[1]), abs(self[2]))
-    def d1(self):
-        return sum(self.abs())
 
 def setup_rotations():
     x = Point(1,0,0)
@@ -58,7 +52,7 @@ def calculate_differences(beacons, symmetric=False):
     for a,b in combinations(beacons, 2):
         d = b-a
         if symmetric:
-            d = Point(*sorted(d.abs()))
+            d = Point(*sorted(map(abs, d)))
             diffs[a].add(d)
             diffs[b].add(d)
         else:
@@ -121,7 +115,7 @@ def main():
     all_beacons = set.union(*(sc.beacon_set for sc in scanners))
     print("Number of beacons:", len(all_beacons))
 
-    max_manhattan = max((a.position-b.position).d1()
+    max_manhattan = max(sum(map(abs, a.position-b.position))
                         for (a,b) in combinations(scanners, 2))
     print("Max distance:", max_manhattan)
 
