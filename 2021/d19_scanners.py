@@ -14,6 +14,9 @@ def subp(a,b):
 def dot(a,b):
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
 
+def manhattan(a,b):
+    return abs(a[0]-b[0]) + abs(a[1]-b[1]) + abs(a[2]-b[2])
+
 def setup_rotations():
     x = (1,0,0)
     y = (0,1,0)
@@ -81,6 +84,7 @@ class Scanner:
         return None,None
 
     def fix(self, disp, rot):
+        self.position = disp or (0,0,0)
         if disp is not None:
             self.beacons = [addp(disp, rot(p)) for p in self.beacons]
         self.beacon_set = set(self.beacons)
@@ -142,21 +146,20 @@ def main():
             p1,p2 = a.compare_differences(b)
             if p1 is None:
                 continue
-            print(f'{p1} in {a} is {p2} in {b}')
             rot = find_rotation(a, b, p1, p2)
             if rot is None:
-                print("(no rotation found)")
                 continue
-            print(rot)
             rotp = rot(p2)
             disp = subp(p1, rotp)
             b.fix(disp, rot)
             fixed.append(b)
         unfixed = [sc for sc in unfixed if not sc.fixed]
     all_beacons = set.union(*(sc.beacon_set for sc in scanners))
-    #print('\n'.join(map(str, sorted(all_beacons))))
-    # 882: TOO HIGH
     print("Number of beacons:", len(all_beacons))
+
+    max_manhattan = max(manhattan(a.position, b.position)
+         for (a,b) in itertools.combinations(scanners, 2))
+    print("Max distance:", max_manhattan)
 
 
 if __name__ == '__main__':
