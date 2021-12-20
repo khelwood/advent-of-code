@@ -2,48 +2,51 @@
 
 import sys
 from itertools import product
+from dataclasses import dataclass
 
 ALL_BITS = 511
 
-def compute_region(light, pos):
-    total = 0
-    bit = 1
-    for nbr in ordered_neighbours(pos):
-        if nbr in light:
-            total |= bit
-        bit <<= 1
-    return total
+@dataclass
+class Grid:
+    marks : set
+    default : bool
 
-def find_bounds(light):
-    x0 = 1_000_000
-    x1 = 0
-    y0 = 1_000_000
-    y1 = 0
+    def compute_region(self, pos):
+        total = 0
+        bit = 1
+        marks = self.marks
+        for nbr in ordered_neighbours(pos):
+            if nbr in marks:
+                total |= bit
+            bit <<= 1
+        if self.default:
+            total = ALL_BITS ^ total
+        return total
 
-    for x,y in light:
-        x0 = min(x0, x)
-        x1 = max(x1, x)
-        y0 = min(y0, y)
-        y1 = max(y1, y)
+    def find_bounds(self):
+        x0 = 1_000_000
+        x1 = 0
+        y0 = 1_000_000
+        y1 = 0
+        for x,y in self.marks:
+            x0 = min(x0, x)
+            x1 = max(x1, x)
+            y0 = min(y0, y)
+            y1 = max(y1, y)
+        return x0,y0,x1,y1
 
-    return (x0,y0,x1,y1)
+    def enhance(self, code):
+        new = set()
+        newdefault = code[ALL_BITS if self.default else 0]
+        x0,y0,x1,y1 = self.find_bounds()
+        for pos in product(range(x0-1, x1+2), range(y0-1,y1+2)):
+            region = self.compute_region(pos)
+            if code[region]!=newdefault:
+                new.add(pos)
+        return Grid(new, newdefault)
 
-def enhance(light, bg, code):
-    newlight = set()
-    if bg=='.':
-        newbg = code[0]
-    else:
-        newbg = code[ALL_BITS]
-    x0,y0,x1,y1 = find_bounds(light)
-
-    for pos in product(range(x0-1, x1+2), range(y0-1, y1+2)):
-        region = compute_region(light, pos)
-        if bg=='#':
-            region = ALL_BITS&~region
-        if code[region] != newbg:
-            newlight.add(pos)
-
-    return newlight, newbg
+    def __len__(self):
+        return len(self.marks)
 
 def ordered_neighbours(pos):
     x,y = pos
@@ -59,35 +62,25 @@ def ordered_neighbours(pos):
 
 def read_input():
     lines = sys.stdin.read().strip().splitlines()
-    code = lines.pop(0)
+    code = [ch=='#' for ch in lines.pop(0)]
     while not lines[0]:
         del lines[0]
 
-    light = set()
+    marks = set()
     for y,line in enumerate(lines):
         for x,ch in enumerate(line):
             if ch=='#':
-                light.add((x,y))
-    return code, light
-
-def draw(light, bg):
-    x0,y0,x1,y1 = find_bounds(light)
-    print("Bounds:", x0, y0, x1, y1)
-    for y in range(y0-1, y1+2):
-        for x in range(x0-1, x1+2):
-            print('#' if ((x,y) in light)==(bg=='.') else '.', end='')
-        print()
-    print()
+                marks.add((x,y))
+    return code, Grid(marks, False)
 
 def main():
-    code, light = read_input()
-    bg = '.'
+    code, grid = read_input()
     for _ in range(2):
-        light,bg = enhance(light, bg, code)
-    print(len(light))
+        grid = grid.enhance(code)
+    print('After 2:  ', len(grid))
     for _ in range(2, 50):
-        light,bg = enhance(light, bg, code)
-    print(len(light))
+        grid = grid.enhance(code)
+    print('After 50:', len(grid))
 
 if __name__ == '__main__':
     main()
