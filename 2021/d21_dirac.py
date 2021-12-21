@@ -12,7 +12,7 @@ Die rolls 1 then 2 then 3 ... 100, then 1 then 2 ...
 import sys
 from itertools import cycle
 from dataclasses import dataclass
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import NamedTuple
 
 ROLLS = {3:1, 4:3, 5:6, 6:7, 7:6, 8:3, 9:1}
@@ -44,32 +44,28 @@ class PlayState(NamedTuple):
 
 def play_dirac(starts, all_rolls=ROLLS.items()):
     state = PlayState(*starts)
-    state_counter = Counter(state)
     win_counter = [0,0]
-    states = {state}
-    state_counter[state] += 1
-    while states:
-        state = states.pop()
-        c = state_counter[state]
-        if c==0:
-            continue
-        state_counter[state] = 0
-        for roll,freq in all_rolls:
-            st = next_state(state, roll)
-            if st.score_1 >= 21:
-                win_counter[0] += c*freq
-            elif st.score_2 >= 21:
-                win_counter[1] += c*freq
-            else:
-                states.add(st)
-                state_counter[st] += c*freq
-        print(" states: ", len(states), end='\r')
+    score_states = defaultdict(Counter)
+    score_states[0][state] = 1
+    for score in range(41): # 40 is the max possible score without a winner
+        state_counter = score_states[score]
+        for state, count in state_counter.items():
+            for roll, freq in all_rolls:
+                st = next_state(state, roll)
+                if st.score_1 >= 21:
+                    win_counter[0] += count*freq
+                elif st.score_2 >= 21:
+                    win_counter[1] += count*freq
+                else:
+                    total_score = st.score_1 + st.score_2
+                    score_states[total_score][st] += count*freq
+        del score_states[score]
     return win_counter
 
 def next_state(last, roll):
     turn = last.turn
     if turn==0:
-        pos = (last.space_1 + roll-1)%10 + 1
+        pos = (last.space_1 + roll - 1)%10 + 1
         score = last.score_1 + pos
         return PlayState(pos, last.space_2, score, last.score_2, 1)
     pos = (last.space_2 + roll - 1) % 10 + 1
