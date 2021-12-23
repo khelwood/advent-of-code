@@ -27,24 +27,33 @@ from collections import defaultdict
 ENERGY_COST = (1, 10, 100, 1000)
 ROOM_X = (2,4,6,8)
 UNSTOPPABLE = set(ROOM_X)
+LEVEL = 2
 
 class State(NamedTuple):
     rooms: tuple
     hall : tuple = (None,)*11
     @property
-    def solved(self, solved_rooms=tuple((ri,ri) for ri in range(4))):
-        return self.rooms==solved_rooms
+    def solved(self):
+        return all(len(room)==LEVEL and all(p==ri for p in room)
+                   for ri, room in enumerate(self.rooms))
     def __str__(self):
-        lines = ['#'*13]
+        rows = [
+            [room[LEVEL+ri-len(room)] if len(room)+ri >= LEVEL else None
+               for room in self.rooms]
+            for ri in range(LEVEL)
+        ]
         ordA = ord('A')
-        row0 = ''.join(chr(ordA+v) if v is not None else '.' for v in self.hall)
-        lines.append('#' + row0 + '#')
-        row1 = [chr(ordA+room[0]) if len(room)==2 else '.' for room in self.rooms]
-        lines.append('###' + '#'.join(row1)+'###')
-        row2 = [chr(ordA+room[-1]) if room else '.' for room in self.rooms]
-        lines.append('  #' + '#'.join(row2)+'#')
-        lines.append('  '+'#'*9)
-        return '\n'.join(lines)
+        row_lines = ['#'.join(chr(ordA+v) if v is not None else '.' for v in row)
+                     for row in rows]
+
+        hall_row = ''.join(chr(ordA+v) if v is not None else '.' for v in self.hall)
+        row_lines[0] = '###' + row_lines[0] + '###'
+        for i in range(1, len(row_lines)):
+            row_lines[i] = '  #' + row_lines[i] + '#'
+
+        return '\n'.join(
+            ['#'*13, hall_row] + row_lines + ['  '+'#'*9]
+        )
 
 # def make_state(rooms, hall=(None,)*11, real_state=State):
 #     for r in rooms:
@@ -77,7 +86,7 @@ def moves(state):
     for rn,room in enumerate(state.rooms):
         if not room:
             continue
-        if room[0] != rn or len(room)==2 and room[1] != rn:
+        if room[0] != rn or len(room)>1 and any(r!=rn for r in room):
             yield from move_from_room(state, rn)
 
 NO_MOVE = (0, None)
@@ -95,8 +104,8 @@ def hall_to_room(state, pos, energy_cost=ENERGY_COST, no_move=NO_MOVE) -> (int, 
         if hall[x] is not None:
             return no_move
         moves += 1
-    # we are now outside the room
-    moves += 2-len(room)
+    # we are now outside the destination room
+    moves += LEVEL-len(room)
     room = (pod,) + room
     hall = tuple_update(hall, pos, None)
     rooms = tuple_update(rooms, pod, room)
@@ -108,13 +117,13 @@ def room_to_room(state, src, dest, no_move=NO_MOVE, energy_cost=ENERGY_COST):
     dest_room = rooms[dest]
     if any(d!=dest for d in dest_room):
         return no_move
-    moves = 3-len(rooms[src]) # step out of the room
+    moves = 1 + LEVEL - len(rooms[src]) # step out of the room
     step = 1 if dest > src else -1
     for x in range(ROOM_X[src]+step, ROOM_X[dest]+step, step):
         if hall[x] is not None:
             return no_move
         moves += 1
-    moves += 2-len(dest_room)
+    moves += LEVEL - len(dest_room) # step into the room
     energy = energy_cost[dest]*moves
     dest_room = (dest,) + dest_room
     src_room = rooms[src][1:]
@@ -133,7 +142,7 @@ def move_from_room(state, rn, unstoppable=UNSTOPPABLE, energy_cost=ENERGY_COST):
         if st:
             yield (e, st)
             return
-    start_moves = 3-len(room) # stepping out of the room
+    start_moves = 1 + LEVEL - len(room) # stepping out of the room
     start_pos = ROOM_X[rn]
 
     room = room[1:]
@@ -160,11 +169,15 @@ def solve(initial_state):
     energy_states = defaultdict(set)
     energy_states[0].add(initial_state)
     energy = 0
+    seen_states = set()
     while True:
         states = energy_states.get(energy)
         if states:
             print(f"[ energy: {energy} ]", end='\r')
             for state in states:
+                if state in seen_states:
+                    continue
+                seen_states.add(state)
                 if state.solved:
                     return energy
                 for e,new_state in moves(state):
@@ -172,11 +185,22 @@ def solve(initial_state):
         energy += 1
     raise ValueError("Could not solve.")
 
+def level_up(state):
+    global LEVEL
+    LEVEL = 4
+    rooms,hall = state
+    inserts = ((3,3), (2,1), (1,0), (0,2))
+    rooms = tuple(room[:1] + insert + room[1:]
+              for (room, insert) in zip(rooms, inserts))
+    return State(rooms, hall)
 
 def main():
-    initial_state = read_input()
-    e = solve(initial_state)
-    print("Solved with", e, "energy")
+    state = read_input()
+    e = solve(state)
+    print("Part 1 solved with", e, "energy")
+    state = level_up(state)
+    e = solve(state)
+    print("Part 2 solved with", e, "energy")
 
 if __name__ == '__main__':
     main()
