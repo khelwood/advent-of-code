@@ -2,7 +2,7 @@
 
 import sys
 import re
-import itertools
+
 from collections import defaultdict
 
 def manhattan(a,b):
@@ -17,24 +17,25 @@ def read_input(srcfile):
             sensor_beacons[x0,y0] = x1,y1
     return sensor_beacons
 
-def find_bounds(points):
-    it = iter(points)
-    x0,y0 = x1,y1 = next(it)
-    for (x,y) in it:
-        x0 = min(x0, x)
-        y0 = min(y0, y)
-        x1 = max(x1, x)
-        y1 = max(y1, y)
-    return x0,y0, x1,y1
-
-def find_impossible_in_row(row, sbs, ranges, partitions, x0, x1, beacons):
+def find_impossible_in_row(row, sbs, ranges, partitions, beacons):
     step = partitions['size']
     nearby_sensors = {k:sbs[k] for k in partitions[row//step]}
     num = 0
-    for x in range(x0, x1):
+    x0 = min(s[0]-ranges[s] for s in nearby_sensors)
+    x1 = max(s[0]+ranges[s] for s in nearby_sensors) + 1
+    x = x0
+    while x < x1:
         p = (x,row)
-        if p not in beacons and any(manhattan(p, s) <= ranges[s] for s in nearby_sensors):
-            num += 1
+        if p in beacons:
+            x += 1
+            continue
+        sensor = next((s for s in nearby_sensors if manhattan(p,s) <= ranges[s]), None)
+        if not sensor:
+            x += 1
+            continue
+        new_x = max(x+1, sensor[0] + ranges[sensor] - abs(sensor[1] - row))
+        num += new_x - x
+        x = new_x
     return num
 
 def find_possible_in_row(row, sbs, ranges, x0, x1, beacons, partitions):
@@ -63,8 +64,6 @@ def partition_sensors(sensor_ranges, size=10_000):
             partitions[yy].add(s)
     return partitions
 
-
-
 def main():
     if 'test' in sys.argv[1:]:
         row = 10
@@ -79,21 +78,13 @@ def main():
     sbs = read_input(srcfile)
     beacons = set(sbs.values())
     ranges = {p:manhattan(p,b) for (p,b) in sbs.items()}
-    print("(partitioning)")
     partitions = partition_sensors(ranges, size=step)
-    max_md = max(ranges.values())
-    x0,y0, x1,y1 = find_bounds(itertools.chain(sbs, sbs.values()))
 
-    print(f"(finding impossible in row {row})")
-
-    num = find_impossible_in_row(row, sbs, ranges, partitions, x0-max_md, x1+max_md, beacons) # 5838453
+    num = find_impossible_in_row(row, sbs, ranges, partitions, beacons) # 5838453
     print(f"Num impossible in row {row}: {num}")
 
-    x0=y0=0
-    x1=y1=size+1
-
-    for row in range(y0, y1):
-        p = find_possible_in_row(row, sbs, ranges, x0, x1, beacons, partitions)
+    for row in range(0, size+1):
+        p = find_possible_in_row(row, sbs, ranges, 0, size+1, beacons, partitions)
         if p is not None:
             break
 
