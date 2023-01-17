@@ -36,7 +36,7 @@ def find_distances(exits):
                     dists[z,x] = newdist
     return dists
 
-def routes_from(pos, dists, remaining, mins=30):
+def routes_from(pos, dists, remaining, mins):
     for dest in remaining:
         newmins = mins - dists[pos,dest] - 1
         if newmins >= 0:
@@ -45,11 +45,11 @@ def routes_from(pos, dists, remaining, mins=30):
                 found = True
                 route = (dest,) + new
                 yield route
-            if not found:
-                yield (dest,)
+            yield (dest,)
 
-def calculate_flow(route, dists, flows):
-    mins = 30
+def calculate_flow(route, dists, flows, mins, cache):
+    if route in cache:
+        return cache[route]
     pos = 'AA'
     flow = 0
     for new in route:
@@ -57,7 +57,21 @@ def calculate_flow(route, dists, flows):
         mins -= d + 1
         flow += flows[new]*mins
         pos = new
+    cache[route] = flow
     return flow
+
+def elephant_flow(dists, flows, remaining, mins, cache, flowcache):
+    r = cache.get(remaining)
+    if r is not None:
+        return r
+    best_flow = 0
+    for e in routes_from('AA', dists, remaining, mins):
+        flow = calculate_flow(e, dists, flows, mins, flowcache)
+        if flow > best_flow:
+            best_flow = flow
+    cache[remaining] = best_flow
+    return best_flow
+
 
 def main():
     exits, flows = read_valves(sys.stdin)
@@ -65,14 +79,34 @@ def main():
     c = 0
     best_route = None
     best_flow = 0
-    remaining = {k for (k,v) in flows.items() if v}
-    for r in routes_from('AA', dists, remaining):
-        flow = calculate_flow(r, dists, flows)
+    remaining = frozenset(k for (k,v) in flows.items() if v)
+    mins = 30
+    flowcache = {}
+    for r in routes_from('AA', dists, remaining, mins):
+        flow = calculate_flow(r, dists, flows, mins, flowcache)
         if flow > best_flow:
             best_flow = flow
             best_route = r
     print(best_route)
     print(best_flow)
+    mins = 26
+    best_flow = 0
+    num_routes = 0
+    cache = {}
+    flowcache = {}
+    for r in routes_from('AA', dists, remaining, mins):
+        myflow = calculate_flow(r, dists, flows, mins, flowcache)
+        eleflow = elephant_flow(dists, flows, remaining.difference(r), mins,
+            cache, flowcache)
+        total = myflow + eleflow
+        if total > best_flow:
+            best_flow = total
+        num_routes += 1
+        if num_routes%1000==0:
+            print(f' [{num_routes}]',end='\r')
+    print()
+    print(best_flow)
+
 
 if __name__ == '__main__':
     main()
