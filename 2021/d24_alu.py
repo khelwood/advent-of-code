@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+IDEA TO SOLVE:
+The validation for 99 999 999 997 and 99 999 999 996 are the same
+until the last digit; so cache the state after validating the first N digits.
+"""
+
 import sys
 from typing import NamedTuple
 from types import FunctionType
@@ -33,7 +39,7 @@ class Alu:
         self.data = data
         self.data_pos = 0
         self.line_pos = 0
-        self.var = {}
+        self.var = dict.fromkeys('xyzw', 0)
         for com in self.commands:
             #print("Executing", com)
             com(self)
@@ -47,7 +53,7 @@ class Alu:
     def __getitem__(self, name):
         if isinstance(name, int):
             return name
-        return self.var.get(name, 0)
+        return self.var[name]
 
 @command('inp @')
 def inp(alu, name):
@@ -104,6 +110,7 @@ def find_valid(alu, candidates):
         alu.run(data)
         if alu['z']==0:
             return data
+        print(f' {data}', end='\r')
 
 def main():
     commands = tuple(map(parse_command, sys.stdin.read().strip().splitlines()))
