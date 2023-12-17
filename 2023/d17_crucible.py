@@ -30,6 +30,12 @@ class Grid:
     def __init__(self, lines):
         self.lines = tuple(tuple(map(int, line)) for line in lines)
 
+    def init_steps(self, min_step, max_step):
+        self.next_steps = {
+           pd: list(next_steps(self, pd, min_step, max_step))
+           for pd in product(self, (HORIZONTAL, VERTICAL))
+        }
+
     @property
     def wid(self):
         return len(self.lines[0])
@@ -86,6 +92,7 @@ def basic_route_heat(grid, min_step, max_step):
     return heat
 
 def find_routes(grid, start, min_step, max_step):
+    grid.init_steps(min_step, max_step)
     new = [(start, HORIZONTAL, 0), (start, VERTICAL, 0)]
     routes = {}
     BIG = basic_route_heat(grid, min_step, max_step)
@@ -100,7 +107,7 @@ def find_routes(grid, start, min_step, max_step):
             if routes.get(pd, BIG) <= heat:
                 continue
             routes[pd] = heat
-            for q,d,dh in next_steps(grid, pd, min_step, max_step):
+            for q,d,dh in grid.next_steps[pd]:
                 h = heat + dh
                 if routes.get((q,d), BIG) > h:
                     new.append((q,d,h))
