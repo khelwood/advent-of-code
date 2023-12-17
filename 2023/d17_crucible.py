@@ -21,7 +21,10 @@ EAST = (1,0)
 SOUTH = (0,1)
 WEST = (-1,0)
 
-DIRECTIONS = (NORTH, EAST, SOUTH, WEST)
+VERTICAL = (NORTH, SOUTH)
+HORIZONTAL = (EAST, WEST)
+
+DIRECTIONS = VERTICAL + HORIZONTAL
 
 class Grid:
     def __init__(self, lines):
@@ -50,7 +53,8 @@ class Grid:
 # A step is N moves in a direction perpendicular to the previous
 def next_steps(grid, pd, min_step, max_step):
     pos, last_dir = pd
-    for d in (left(last_dir), right(last_dir)):
+    newdir = HORIZONTAL if last_dir is VERTICAL else VERTICAL
+    for d in newdir:
         q = pos
         heat = 0
         for step in range(1, max_step+1):
@@ -59,7 +63,7 @@ def next_steps(grid, pd, min_step, max_step):
                 break
             heat += grid[q]
             if step >= min_step:
-                yield (q,d,heat)
+                yield (q,newdir,heat)
 
 def basic_route_heat(grid, min_step, max_step):
     heat = 0
@@ -82,7 +86,7 @@ def basic_route_heat(grid, min_step, max_step):
     return heat
 
 def find_routes(grid, start, min_step, max_step):
-    new = [(start, NORTH, 0), (start, WEST, 0)]
+    new = [(start, HORIZONTAL, 0), (start, VERTICAL, 0)]
     routes = {}
     BIG = basic_route_heat(grid, min_step, max_step)
     def sort_key(pdh):
@@ -106,10 +110,10 @@ def main():
     grid = Grid(sys.stdin.read().strip().splitlines())
     start = (0,0)
     end = (grid.wid-1, grid.hei-1)
-    for min_step, max_step in ((1,3), (4,10)):
+    for (part, (min_step, max_step)) in enumerate(((1,3), (4,10)), 1):
         routes = find_routes(grid, start, min_step, max_step)
-        heat = min(routes.get((end,d), 10_000) for d in DIRECTIONS)
-        print("Heat:", heat)
+        heat = min(routes.get((end,d), 10_000) for d in (VERTICAL, HORIZONTAL))
+        print(f"Part {part}: {heat}")
 
 if __name__ == '__main__':
     main()
