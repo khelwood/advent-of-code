@@ -2,6 +2,7 @@
 
 import sys
 import re
+import math
 
 from collections import deque, defaultdict
 
@@ -69,25 +70,55 @@ def update_conjunctions(modules):
             for source in sources[module.name]:
                 module.inputs[source] = LOW
 
-def main():
-    lines = sys.stdin.read().strip().splitlines()
+def parse_modules(lines):
     modules = {m.name:m for m in map(parse_module, lines)}
     update_conjunctions(modules)
+    return modules
+
+def main():
+    lines = sys.stdin.read().strip().splitlines()
+    modules = parse_modules(lines)
     queue = deque()
     pulse_count = {LOW:0, HIGH:0}
-    output = {LOW:0, HIGH:0}
     for _ in range(1000):
         queue.append(('broadcaster', 'button', LOW))
         while queue:
             (name, source, pulse) = queue.popleft()
             pulse_count[pulse] += 1
-            if name not in modules:
-                output[pulse] += 1
-            else:
+            if name in modules:
                 modules[name].receive(source, pulse, queue)
     pulse_total = pulse_count[LOW]*pulse_count[HIGH]
     print("Part 1:", pulse_total)
 
+    modules = parse_modules(lines)
+    conj, = [m for m in modules.values() if 'rx' in m.outputs]
+    assert isinstance(conj, Conjunction)
+    to_conj = set(conj.inputs)
+    n = 0
+    queue = deque()
+    hits = defaultdict(list)
+    enough = False
+    while not enough:
+        n += 1
+        queue.append(('broadcaster', 'button', LOW))
+        while queue:
+            (name, source, pulse) = queue.popleft()
+            if name==conj.name and pulse==HIGH:
+                hits[source].append(n)
+                if all(len(hits[k]) > 3 for k in to_conj):
+                    enough = True
+            if name in modules:
+                modules[name].receive(source, pulse, queue)
+    for k,vs in hits.items():
+        delta = vs[1]-vs[0]
+        n = 0
+        for v in vs:
+            n += delta
+            assert v==n
+        # hits each refers to a linear sequence
+        hits[k] = delta
+    result = math.lcm(*hits.values())
+    print("Part 2:", result)
 
 if __name__ == '__main__':
     main()
