@@ -22,24 +22,28 @@ class Maze:
         pos_junction[end_junction.pos] = end_junction
         for junc in junctions:
             for q in self.ways[junc.pos]:
-                d,nj = self.next_junction(junc.pos, q)
-                if d >= 0:
-                    nj = pos_junction[nj]
-                    junc.links[nj] = d
+                path = self.next_junction(junc.pos, q)
+                if path:
+                    nj = pos_junction[path[-1]]
+                    junc.links[nj] = path
 
     def next_junction(self, start, cur):
-        dist = 1
+        dist = 0
         last = start
+        path = [cur]
         while True:
+            if cur==self.end:
+                return path
             ways = self.ways[cur]
-            if len(ways) > 2 or cur==self.end:
-                return dist,cur
+            if len(ways) > 2:
+                return path
             p = next((pp for pp in ways if pp!=last), None)
             if p is None:
-                return -1,None
+                return None
             last = cur
             cur = p
-            dist +=1
+            path.append(cur)
+
 
 class Junction:
     def __init__(self, index, pos, links):
@@ -82,35 +86,37 @@ def parse_maze(lines, respect_slopes):
 
 def find_longest(maze, cur, visited, cache):
     key = (cur, visited)
-    n = cache.get(key)
-    if n is not None:
-        return n
+    val = cache.get(key)
+    if val is not None:
+        return val
     if cur.pos==maze.end:
-        cache[key] = 0
-        return 0
+        cache[key] = val = (0, (maze.end,))
+        return val
     if (cur.bit & visited):
-        cache[key] = -1
-        return -1
+        cache[key] = val = (-1, ())
+        return val
     vis = visited | cur.bit
     best = -1
-    for nx,d in cur.links.items():
-        if (nx.bit & vis):
+    bestjuncs = None
+    for nj,path in cur.links.items():
+        if (nj.bit & vis):
             continue
-        newd = find_longest(maze, nx, vis, cache) + d
-        if newd > best:
-            best = newd
-    cache[key] = best
-    return best
+        dist,juncs = find_longest(maze, nj, vis, cache)
+        if dist >= 0 and dist + len(path) > best:
+            best = dist + len(path)
+            bestjuncs = (nj,) + juncs
+    cache[key] = val = (best, bestjuncs)
+    return val
 
 def main():
     lines = sys.stdin.read().strip().splitlines()
     maze = parse_maze(lines, respect_slopes=True)
     maze.find_junctions()
-    dist = find_longest(maze, maze.junctions[0], 0, {})
+    dist,juncs = find_longest(maze, maze.junctions[0], 0, {})
     print("Part 1:", dist)
     maze = parse_maze(lines, respect_slopes=False)
     maze.find_junctions()
-    dist = find_longest(maze, maze.junctions[0], 0, {})
+    dist,juncs = find_longest(maze, maze.junctions[0], 0, {})
     print("Part 2:", dist)
 
 
