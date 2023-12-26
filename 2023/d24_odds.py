@@ -2,6 +2,7 @@
 
 import sys
 import re
+import z3
 
 from typing import NamedTuple
 from itertools import combinations
@@ -9,27 +10,10 @@ from itertools import combinations
 HAIL_PTN = re.compile(' # , # , # @ # , # , # '
     .replace(' ',r'\s*').replace('#', r'(-?\d+)'))
 
-def addp(a,b):
-    return (a[0]+b[0], a[1]+b[1], a[2]+b[2])
-
 class Hail:
     def __init__(self, pos, vel):
         self.pos = pos
         self.vel = vel
-
-    def __repr__(self):
-        return f'Hail(pos={self.pos}, vel={self.vel})'
-
-    def line_form(self):
-        """
-        pos + lambda vel
-        x = px + lambda vx, y = py + lambda vy
-        (x - px) / vx = (y - py) / vy
-        vy(x - px) = vx(y - py)
-
-        vy*x - vy*px - vx*y + vx*py = 0
-        vy*x - vx*y + vx*py-vy*px = 0
-        """
 
 def intersect(a, b):
     """
@@ -43,23 +27,16 @@ def intersect(a, b):
     ay + bx*uy/ux + t*vx*uy/ux - ax*uy/ux = by + t*ux
     t*(vx*uy/ux - ux) = by - ay - bx*uy/ux + ax*uy/ux
     t = (by - ay - bx*uy/ux + ax*uy/ux) / (vx*uy/ux - ux)
-
-
-    ay + uy * (bx + t*vx - ax) / ux = by + t*vy
-    ay + uy*bx/ux + t*uy*vx/ux - uy*ax/ux = by + t*vy
-    t * (uy*vx/ux - vy) = by - ay - uy*bx/ux + uy*ax/ux
-    t = (by - ay - uy*bx/ux + uy*ax/ux) / (uy*vx/ux - vy)
-
     """
 
     if a.vel[0]==0:
         if b.vel[0]==0:
             return None
         a,b = b,a
-    ax,ay = a.pos
-    ux,uy = a.vel
-    bx,by = b.pos
-    vx,vy = b.vel
+    ax,ay = a.pos[:2]
+    ux,uy = a.vel[:2]
+    bx,by = b.pos[:2]
+    vx,vy = b.vel[:2]
     if uy*vx==ux*vy:
         return None
     t = (by - ay - uy*bx/ux + uy*ax/ux) / (uy*vx/ux - vy)
@@ -87,7 +64,6 @@ def count_intersections(hails, mindist, maxdist):
 
     (x[0],y[0]) = (b[1]c[2]-b[2]c[1], c[1]a[2]-c[2]a[1]) all / (a[1]b[2] - a[2]b[1])
     """
-    hails = [Hail(h.pos[:2], h.vel[:2]) for h in hails]
     count = 0
     for a,b in combinations(hails, 2):
         p = intersect(a,b)
@@ -96,6 +72,26 @@ def count_intersections(hails, mindist, maxdist):
             if mindist <= x <= maxdist and mindist <= y <= maxdist:
                 count += 1
     return count
+
+def find_throw_start(hails):
+    sol = z3.Solver()
+    x = z3.Int('x')
+    y = z3.Int('y')
+    z = z3.Int('z')
+    vx = z3.Int('vx')
+    vy = z3.Int('vy')
+    vz = z3.Int('vz')
+    for i,hail in enumerate(hails):
+        hx,hy,hz = hail.pos
+        ux,uy,uz = hail.vel
+        tvar = z3.Int(f't{i}')
+        sol.add(tvar >= 0)
+        sol.add(x + tvar*vx == hx + tvar*ux)
+        sol.add(y + tvar*vy == hy + tvar*uy)
+        sol.add(z + tvar*vz == hz + tvar*uz)
+    assert sol.check()==z3.sat
+    model = sol.model()
+    return tuple(model[coord].as_long() for coord in (x,y,z))
 
 
 def main():
@@ -107,6 +103,7 @@ def main():
         mindist = 7
         maxdist = 27
     print("Part 1:", count_intersections(hails, mindist, maxdist))
+    print("Part 2:", sum(find_throw_start(hails)))
 
 if __name__ == '__main__':
     main()
