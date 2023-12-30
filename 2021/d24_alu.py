@@ -1,115 +1,98 @@
 #!/usr/bin/env python3
 
 import sys
-from typing import NamedTuple
-from types import FunctionType
+import re
+import z3
 
-COMMANDS = {}
+PATTERN_1 = re.compile(r'''
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x -?\d+
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y (-?\d+)
+mul y x
+add z y
+'''.strip())
 
-def command(pattern):
-    words = pattern.split()
-    num_args = len(words)-1
-    name = words[0]
-    def command(func):
-        func.num_args = num_args
-        COMMANDS[name] = func
-        return func
-    return command
+PATTERN_2 = re.compile(r'''
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x (-?\d+)
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y -?\d+
+mul y x
+add z y
+'''.strip())
 
-class CommandLine(NamedTuple):
-    func: FunctionType
-    args: tuple
 
-    def __call__(self, alu):
-        self.func(alu, *self.args)
-    def __str__(self):
-        return f'{self.func.__name__}{self.args}'
+def solve(text:str, least:bool):
+    chunk = 0
+    pushes = []
+    wvars = {s:z3.Int(s) for s in (f'w{i}' for i in range(1,15))}
+    sol = z3.Solver()
+    while text:
+        command = None
+        m = PATTERN_1.match(text)
+        if m:
+            command = 'push'
+        else:
+            m = PATTERN_2.match(text)
+            if m:
+                command = 'pop'
+        if not command:
+            raise ValueError(repr(text))
+        d = int(m.group(1))
+        chunk += 1
+        w = f"w{chunk}"
+        wvar = wvars[w]
+        sol.add(1 <= wvar)
+        sol.add(wvar <= 9)
 
-class Alu:
-    def __init__(self, commands):
-        self.commands = commands
-        self.data = None
-    def run(self, data):
-        self.data = data
-        self.data_pos = 0
-        self.line_pos = 0
-        self.var = {}
-        for com in self.commands:
-            #print("Executing", com)
-            com(self)
-            #print(self.var)
-    def read(self):
-        value = self.data[self.data_pos]
-        self.data_pos += 1
-        return value
-    def __setitem__(self, name, value):
-        self.var[name] = value
-    def __getitem__(self, name):
-        if isinstance(name, int):
-            return name
-        return self.var.get(name, 0)
-
-@command('inp @')
-def inp(alu, name):
-    alu[name] = alu.read()
-
-@command('add @ @')
-def add(alu, a, b):
-    alu[a] = alu[a] + alu[b]
-
-@command('mul @ @')
-def mul(alu, a, b):
-    alu[a] = alu[a] * alu[b]
-
-@command('div @ @')
-def div(alu, a, b):
-    n = alu[a]
-    d = alu[b]
-    if (n < 0) != (d < 0):
-        alu[a] = -(abs(n)//abs(d))
-    else:
-        alu[a] = n//d
-
-@command('mod @ @')
-def mod(alu, a, b):
-    alu[a] = alu[a] % alu[b]
-
-@command('eql @ @')
-def eql(alu, a, b):
-    alu[a] = int(alu[a]==alu[b])
-
-def intify(string):
-    try:
-        return int(string)
-    except ValueError:
-        return string
-
-def parse_command(line):
-    funcname, *args = line.split()
-    func = COMMANDS[funcname]
-    assert func.num_args==len(args)
-    args = tuple(intify(w) for w in args)
-    return CommandLine(func, args)
-
-def iter_candidates():
-    num = 10**14
-    while True:
-        num -= 1
-        data = tuple(int(d) for d in str(num))
-        if 0 not in data:
-            yield data
-
-def find_valid(alu, candidates):
-    for data in candidates:
-        alu.run(data)
-        if alu['z']==0:
-            return data
+        if command=='push':
+            pushes.append((w,d))
+        else:
+            v,e = pushes.pop()
+            sol.add(wvar == wvars[v] + (e + d))
+        text = text[m.end():].strip()
+    while sol.check()==z3.sat:
+        model = sol.model()
+        ws = [model[wvars[f'w{i}']].as_long() for i in range(1,15)]
+        answer = int(''.join(map(str, ws)))
+        varsum = wvars['w14']
+        tens = 1
+        for i in range(13,0,-1):
+            tens *= 10
+            varsum += tens*wvars[f'w{i}']
+        sol.add((varsum < answer) if least else (varsum > answer))
+    return answer
 
 def main():
-    commands = tuple(map(parse_command, sys.stdin.read().strip().splitlines()))
-    alu = Alu(commands)
-    data = find_valid(alu, iter_candidates())
-    print("Valid number:", ''.join(map(str, data)))
+    text = sys.stdin.read().strip()
+    print(solve(text, False))
+    print(solve(text, True))
+
 
 if __name__ == '__main__':
     main()
