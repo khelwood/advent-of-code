@@ -3,65 +3,47 @@ import sys
 DIRECTIONS = {'>':(1,0), 'v':(0,1)}
 
 class Sea:
-    def __init__(self, wid, hei, herds):
-        self.wid = wid
-        self.hei = hei
+    def __init__(self, size, herds):
+        self.size = size
         self.herds = herds
-        self.occupied = {c.pos for herd in herds for c in herd}
     
-    def predict_move(self, critter):
-        x,y = critter.pos
-        dx,dy = critter.dir
-        nextpos = ((x+dx)%self.wid, (y+dy)%self.hei)
-        if nextpos in self.occupied:
-            nextpos = None
-        critter.next = nextpos
-        return nextpos
-    
-    def execute_move(self, critter):
-        n = critter.next
-        if n is not None:
-            self.occupied.remove(critter.pos)
-            self.occupied.add(n)
-            critter.pos = n
-    
-    def move_herd(self, herd):
-        crs = [c for c in herd if self.predict_move(c)]
-        if not crs:
+    def run_herd(self, dir):
+        herd = self.herds[dir]
+        new_herd = set()
+        dx,dy = dir
+        w,h = self.size
+        any_moved = False
+        for p in herd:
+            x,y = p
+            n = ((x+dx)%w, (y+dy)%h)
+            if any(n in h for h in self.herds.values()):
+                new_herd.add(p)
+            else:
+                new_herd.add(n)
+                any_moved = True
+        if not any_moved:
             return False
-        for c in crs:
-            self.execute_move(c)
+        self.herds[dir] = new_herd
         return True
     
     def run(self):
-        herds = self.herds
         turns = 1
-        while sum(self.move_herd(herd) for herd in herds) > 0:
+        dirs = tuple(DIRECTIONS[ch] for ch in '>v')
+        while sum(map(self.run_herd, dirs)) > 0:
             turns += 1
         return turns
 
 
-class Critter:
-    def __init__(self, dir, pos):
-        self.dir = dir
-        self.pos = pos
-        self.next = None
-
 def read_sea(lines):
-    herds = {v:[] for v in DIRECTIONS}
-    for y, line in enumerate(lines):
+    herds = {v:set() for v in DIRECTIONS.values()}
+    for y,line in enumerate(lines):
         for x,ch in enumerate(line):
             if ch != '.':
-                pos = (x,y)
-                dir = DIRECTIONS[ch]
-                cr = Critter(dir, pos)
-                herds[ch].append(cr)
-    return Sea(len(lines[0]), len(lines), [herds[ch] for ch in '>v'])
-    
+                herds[DIRECTIONS[ch]].add((x,y))
+    return Sea((len(lines[0]), len(lines)), herds)
 
 def main():
-    lines = sys.stdin.read().strip().splitlines()
-    sea = read_sea(lines)
+    sea = read_sea(sys.stdin.read().strip().splitlines())
     print(sea.run())
 
 if __name__ == '__main__':
