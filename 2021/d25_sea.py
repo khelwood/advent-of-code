@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 
 DIRECTIONS = {'>':(1,0), 'v':(0,1)}
