@@ -97,35 +97,56 @@ def inferior(a,b):
 
 def sort_and_prune(states):
     states = sorted(states, reverse=True)
-    i = 1
-    while i < len(states):
-        res, rob = states[i]
-        if any(inferior(res, jres) and inferior(rob, jrob)
-                for jres, jrob in (states[j] for j in range(i))):
-            del states[i]
-        else:
-            i += 1
-    return states
+    pruned = []
+    seen = set()
+    for state in states:
+        if state in seen:
+            continue
+        seen.add(state)
+        res, rob = state
+        if not any(inferior(res, jres) and inferior(rob, jrob)
+                for (jres, jrob) in pruned):
+            pruned.append(state)
+    return pruned
 
-def track_production(costs, resources, robots, turns):
-    new_states = [(resources, robots)]
-    turn_states = [[] for _ in range(turns)]
-    for time_left in range(turns-1, -1, -1):
-        old_states = sort_and_prune(new_states)
-        for resources, robots in old_states:
-            for robot,robcost in enumerate(costs):
-                if not useful(costs, robot, robots, turns):
+def project_state(robcost, resources, robots):
+    turns = 0
+    while not inferior(robcost, resources):
+        resources += robots
+        turns += 1
+    return turns, resources
+
+def track_production(costs, resources, robots, turn_limit):
+    turn_states = [[] for _ in range(turn_limit+1)]
+    turn_states[0] = [(resources, robots)]
+    for turn in range(turn_limit-1):
+        old_states = sort_and_prune(turn_states[turn])
         for resources, robots in old_states:
             new_resources = resources + robots
-            for new_robot in next_robot(costs, robots, resources, time_left):
-                if new_robot>=0:
-                    ns_resources = new_resources - costs[new_robot]
-                    ns_robots = robots.inc(new_robot)
-                    new_states.append((ns_resources, ns_robots))
-                else:
-                    new_states.append((new_resources, robots))
-        print(time_left, len(new_states))
-    return max(res[GEODE] for res,_ in new_states)
+            can_build = False
+            for robot,robcost in enumerate(costs):
+                if not useful(costs, robot, robots, turn_limit-turn):
+                    continue
+                if inferior(robcost, resources):
+                    ns_resources = new_resources - robcost
+                    ns_robots = robots.inc(robot)
+                    turn_states[turn+1].append((ns_resources, ns_robots))
+                    can_build = True
+                elif all(c==0 or r > 0 for (c,r) in zip(robcost, robots)):
+                    wait_time, ns_resources = project_state(robcost, new_resources, robots)
+                    ns_turns = turn + wait_time + 1
+                    if ns_turns <= turn_limit:
+                        ns_robots = robots.inc(robot)
+                        turn_states[ns_turns].append((ns_resources, ns_robots))
+                        can_build = True
+            if not can_build:
+                turn_states[turn+1].append((new_resources, robots))
+    old_states = turn_states[turn_limit]
+    best = 0
+    for resources, robots in old_states:
+        score = resources[GEODE] + robots[GEODE]
+        best = max(score, best)
+    return best
 
 def main():
     blueprints = list(parse_blueprints(sys.stdin.read().strip()))
@@ -135,13 +156,13 @@ def main():
     for b in blueprints:
         score = track_production(b.costs, initial_resources, initial_robots, 24)
         total += score * b.index
-        print(b.index, score)
+        print(' ', b.index, score)
     print("Part 1:", total)
     total = 1
     for b in blueprints[:3]:
         score = track_production(b.costs, initial_resources, initial_robots, 32)
         total *= score
-        print(b.index, score)
+        print(' ', b.index, score)
     print("Part 2:", total)
     # IDEA: instead of picking what to do this turn,
     #  add a state to some future for each robot you might build
