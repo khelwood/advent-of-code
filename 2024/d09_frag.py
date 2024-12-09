@@ -2,13 +2,15 @@
 
 import sys
 
-def read_data():
+# Part 1
+
+def read_data(text):
     pos = 0
     counter = 0
     spaces = []
     isfile = True
     data = []
-    for size in map(int, sys.stdin.read().strip()):
+    for size in map(int, text):
         if isfile:
             data += [counter]*size
             counter += 1
@@ -30,54 +32,66 @@ def frag_data(data, spaces):
         data[end] = None
         end -= 1
 
-def file_start_size(data, index):
-    while index >= 0 and data[index] is None:
-        index -= 1
-    if index < 0:
-        return (-1,-1)
-    id = data[index]
-    start = index
-    while start > 0 and data[start-1]==id:
-        start -= 1
-    return (start, index+1-start)
-
-def find_space(data, source, size):
-    run = 0
-    for i,sp in enumerate(data):
-        if i >= source:
-            break
-        if sp is not None:
-            run = 0
-        else:
-            run += 1
-            if run >= size:
-                return i + 1 - run
-    return -1
-
-def move_data(data, src, dest, size):
-    for i in range(size):
-        data[dest+i] = data[src+i]
-        data[src+i] = None
-
-def frag_files(data):
-    start, size = file_start_size(data, len(data)-1)
-    while start >= 0:
-        sp = find_space(data, start, size)
-        if sp >= 0:
-            move_data(data, start, sp, size)
-        start, size = file_start_size(data, start-1)
-
 def checksum_data(data):
     return sum(i*d for i,d in enumerate(data) if d)
 
+# Part 2
+
+class File:
+    def __init__(self, id, size):
+        self.id = id
+        self.size = size
+    def checksum(self, start):
+        if not self.id:
+            return 0
+        end = start + self.size-1
+        sumrange = self.size*(start+end)//2
+        return self.id * sumrange
+
+def read_files(text):
+    files = []
+    counter = 0
+    isfile = True
+    for size in map(int, text):
+        if isfile:
+            f = File(counter, size)
+            counter += 1
+        else:
+            f = File(None, size)
+        files.append(f)
+        isfile = not isfile
+    return files
+
+def frag_files(files):
+    for si in range(len(files)-1, 0, -1):
+        src = files[si]
+        if src.id is None:
+            continue
+        for ti in range(1, si):
+            tgt = files[ti]
+            if tgt.id is not None or tgt.size < src.size:
+                continue
+            tgt.size -= src.size
+            files[si] = File(None, src.size)
+            files.insert(ti, src)
+            break
+
+def checksum_files(files):
+    pos = 0
+    total = 0
+    for f in files:
+        total += f.checksum(pos)
+        pos += f.size
+    return total
+
 def main():
-    data, spaces = read_data()
-    original_data = data[:]
+    text = sys.stdin.read().strip()
+    data, spaces = read_data(text)
     frag_data(data, spaces)
     print(checksum_data(data))
-    data = original_data
-    frag_files(data)
-    print(checksum_data(data))
+    files = read_files(text)
+    frag_files(files)
+    print(checksum_files(files))
 
 if __name__ == '__main__':
     main()
