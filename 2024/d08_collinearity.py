@@ -18,6 +18,11 @@ class Point(tuple):
     def __mul__(self, s):
         return Point(a*s for a in self)
     __rmul__ = __mul__
+    def __intdiv__(self, d):
+        return Point(a//d for a in self)
+    def reduce(self):
+        d = math.gcd(*self)
+        return self if d==1 else self//d
 
 class Grid:
     def __init__(self, nodes, wid, hei):
@@ -45,17 +50,11 @@ def find_antinodes_1(grid):
                 antinodes.add(c)
     return antinodes
 
-def reduce_point(p):
-    d = math.gcd(*p)
-    if d == 1:
-        return p
-    return Point(a//d for a in p)
-
 def find_antinodes_2(grid):
     antinodes = set()
     for groups in grid.nodes.values():
         for (a,b) in combinations(groups, 2):
-            d = reduce_point(b-a)
+            d = (b-a).reduce()
             p = a
             while p in grid:
                 antinodes.add(p)
