@@ -14,7 +14,7 @@ def read_data(text):
         if isfile:
             data += [counter]*size
             counter += 1
-        else:
+        elif size > 0:
             data += [None]*size
             spaces.extend(range(pos, pos+size))
         pos += size
@@ -61,7 +61,7 @@ def read_files(text):
         if isfile:
             files.append(File(counter, pos, size))
             counter += 1
-        else:
+        elif size > 0:
             spaces.append(File(None, pos, size))
         isfile = not isfile
         pos += size
