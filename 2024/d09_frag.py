@@ -38,59 +38,63 @@ def checksum_data(data):
 # Part 2
 
 class File:
-    def __init__(self, id, size):
+    def __init__(self, id, start, size):
         self.id = id
+        self.start = start
         self.size = size
-    def checksum(self, start):
+    @property
+    def last(self):
+        return self.start + self.size - 1
+    def checksum(self):
         if not self.id:
             return 0
-        end = start + self.size-1
-        sumrange = self.size*(start+end)//2
+        sumrange = self.size * (self.start + self.last)//2
         return self.id * sumrange
 
 def read_files(text):
     files = []
+    spaces = []
+    pos = 0
     counter = 0
     isfile = True
     for size in map(int, text):
         if isfile:
-            f = File(counter, size)
+            files.append(File(counter, pos, size))
             counter += 1
         else:
-            f = File(None, size)
-        files.append(f)
+            spaces.append(File(None, pos, size))
         isfile = not isfile
-    return files
+        pos += size
+    return files, spaces
 
-def frag_files(files):
-    for si in range(len(files)-1, 0, -1):
-        src = files[si]
-        if src.id is None:
-            continue
-        for ti in range(1, si):
-            tgt = files[ti]
-            if tgt.id is not None or tgt.size < src.size:
-                continue
-            tgt.size -= src.size
-            files[si] = File(None, src.size)
-            files.insert(ti, src)
+def find_space(src, spaces):
+    for space in spaces:
+        if space.start >= src.start:
             break
+        if space.size >= src.size:
+            return space
+    return None
+
+def frag_files(files, spaces):
+    for src in reversed(files):
+        space = find_space(src, spaces)
+        if space is not None:
+            src.start = space.start
+            space.start += src.size
+            space.size -= src.size
+            if space.size==0:
+                spaces.remove(space)
 
 def checksum_files(files):
-    pos = 0
-    total = 0
-    for f in files:
-        total += f.checksum(pos)
-        pos += f.size
-    return total
+    return sum(f.checksum() for f in files)
 
 def main():
     text = sys.stdin.read().strip()
     data, spaces = read_data(text)
     frag_data(data, spaces)
     print(checksum_data(data))
-    files = read_files(text)
-    frag_files(files)
+    files, spaces = read_files(text)
+    frag_files(files, spaces)
     print(checksum_files(files))
 
 if __name__ == '__main__':
