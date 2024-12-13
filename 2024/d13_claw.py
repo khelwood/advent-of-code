@@ -49,7 +49,7 @@ def read_prizes():
             prizes.append(Prize(a,b,p))
     return prizes
 
-def solve(prize, limit=None):
+def solve(prize, bounds):
     axb = prize.a.cross(prize.b)
     if axb==0: # None of the input a,b are parallel
         return None
@@ -57,21 +57,21 @@ def solve(prize, limit=None):
     if axt%axb:
         return None
     nb = axt//axb
-    if nb < 0 or limit is not None and nb > limit:
+    if not bounds(nb):
         return None
     r = prize.target - nb*prize.b
     na = r[0]//prize.a[0]
-    if na*prize.a!=r or limit is not None and na > limit:
+    if na*prize.a!=r or not bounds(na):
         return None
     return A_COST*na + B_COST*nb
 
 def main():
     prizes = read_prizes()
-    print(sum(solve(prize, 100) or 0 for prize in prizes))
+    print(sum(solve(prize, lambda n: 0 <= n <= 100) or 0 for prize in prizes))
     adjustment = Point(2*(10_000_000_000_000,))
     for prize in prizes:
         prize.target += adjustment
-    print(sum(solve(prize) or 0 for prize in prizes))
+    print(sum(solve(prize, lambda n: 0 <= n) or 0 for prize in prizes))
 
 if __name__ == '__main__':
     main()
