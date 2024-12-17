@@ -2,9 +2,8 @@
 
 import sys
 import re
-import time
 
-OPCODES = {}
+OPCODES = [None]*8
 
 def opcode(n):
     def decorator(f):
@@ -75,15 +74,17 @@ class Machine:
                 pos = r
         return self.output
 
-def as_python(a):
+def in_python(a):
     """This is my input, converted into Python code."""
+    out = []
     while a:
         b = (a&7)^1
         c = a >> b
         b ^= 5
         b ^= c
         a >>= 3
-        yield (b&7)
+        out.append(b&7)
+    return out
 
 def read_input():
     rpn = re.compile(r'^Register (\w): (\d+)$')
@@ -99,26 +100,33 @@ def read_input():
             codes = list(map(int, v.split(',')))
     return regs, codes
 
-def test_a(codes, a):
-    n = 0
-    nc = len(codes)
-    for v in as_python(a):
-        if n >= nc or v != codes[n]:
-            return False
-        n += 1
-    return (n==nc)
+def construct_a(pieces):
+    a = 0
+    for p in pieces:
+        a = 8*a + p
+    return a
+
+def find_pieces(codes, pieces, index=0):
+    outdex = len(codes)-1-index
+    for n in range(8):
+        pieces[index] = n
+        out = in_python(construct_a(pieces))
+        if len(out)==len(codes) and out[outdex]==codes[outdex]:
+            if outdex==0:
+                return pieces
+            r = find_pieces(codes, pieces, index+1)
+            if r:
+                return r
+    return None
 
 def main():
     regs, codes = read_input()
     m = Machine(*regs)
     out = m.run(codes)
     print(','.join(map(str, out)))
-    lower = 1<<(3*(len(codes)-1))
-    upper = 1<<(3*len(codes))
-    for a in range(lower, upper):
-        if test_a(codes, a):
-            print(a)
-            break
+    pieces = [1]*len(codes)
+    r = find_pieces(codes, pieces)
+    print(construct_a(r))
 
 if __name__ == '__main__':
     main()
