@@ -26,8 +26,20 @@ class Warehouse:
     boxes: set
     robot: Point
     course: tuple
-    def copy(self):
-        return Warehouse(set(self.walls), set(self.boxes), self.robot, self.course)
+
+class Widehouse(Warehouse):
+    def __getitem__(self, p):
+        if p in self.walls:
+            return '#'
+        if p in self.boxes:
+            return p
+        p += LEFT
+        if p in self.boxes:
+            return p
+        return None
+    def slide(self, box, d):
+        self.boxes.remove(box)
+        self.boxes.add(box+d)
 
 def read_input():
     walls = set()
@@ -53,113 +65,75 @@ def read_input():
 def advance(wh, d):
     n = wh.robot + d
     if n in wh.walls:
-        return
+        return wh.robot
     if n not in wh.boxes:
-        wh.robot = n
-        return
+        return n
     p = n + d
     while p in wh.boxes:
         p += d
     if p in wh.walls:
-        return
+        return wh.robot
     wh.boxes.add(p)
     wh.boxes.remove(n)
-    wh.robot = n
+    return n
 
-@dataclass
-class BigBox:
-    pos: Point
-    @property
-    def left(self):
-        return self.pos
-    @property
-    def right(self):
-        return self.pos+RIGHT
-    def slide_right(self, grid):
-        del grid[self.left]
-        self.pos += RIGHT
-        grid[self.right] = self
-    def slide_left(self, grid):
-        del grid[self.right]
-        self.pos += LEFT
-        grid[self.left] = self
-    def slide(self, grid, d):
-        match d[0]:
-            case 1: return self.slide_right(grid)
-            case -1: return self.slide_left(grid)
-        for p in self:
-            del grid[p]
-        self.pos += d
-        for p in self:
-            grid[p] = self
-    def __hash__(self):
-        return id(self)
-    def __eq__(self, other):
-        return self is other
-    def __iter__(self):
-        yield self.pos
-        yield self.pos + RIGHT
-
-
-def widen_grid(wh):
+def widen_warehouse(wh):
     def widen(p):
         return Point.at(p[0]*2, p[1])
-    grid = {widen(p):'#' for p in wh.walls}
-    grid.update({widen(p)+RIGHT:'#' for p in wh.walls})
-    boxes = [BigBox(widen(p)) for p in wh.boxes]
-    for box in boxes:
-        grid[box.left] = box
-        grid[box.right] = box
+    walls = {widen(p) for p in wh.walls}|{widen(p)+RIGHT for p in wh.walls}
+    boxes = {widen(p) for p in wh.boxes}
     robot = widen(wh.robot)
-    return grid, robot, boxes
+    return Widehouse(walls, boxes, robot, wh.course)
 
-def advance_wide(grid, robot, d):
-    n = robot + d
-    if n not in grid:
+def advance_wide(wh, d):
+    n = wh.robot + d
+    v = wh[n]
+    if not v:
         return n
-    if grid[n]=='#':
-        return robot
+    if v=='#':
+        return wh.robot
+    box = v
     if d[1]==0: # horizontal
-        boxes = [grid[n]]
+        boxes = [box]
         d2 = d+d
-        p = n+d2
-        while (v := grid.get(p)):
+        p = n + d2
+        while (v := wh[p]):
             if v=='#':
-                return robot
+                return wh.robot
             boxes.append(v)
             p += d2
         for box in reversed(boxes):
-            box.slide(grid, d)
+            wh.slide(box, d)
         return n
-    box_stack = {grid[n]}
+    box_stack = {box}
     boxes = set()
     while box_stack:
         box = box_stack.pop()
         if box in boxes:
             continue
         boxes.add(box)
-        for p in box:
-            v = grid.get(p+d)
+        for p in (box, box+RIGHT):
+            v = wh[p+d]
             if v=='#':
-                return robot
+                return wh.robot
             if not v or v in boxes:
                 continue
             box_stack.add(v)
     if len(boxes) > 1:
-        boxes = sorted(boxes, key=(lambda box:box.pos[1]), reverse=d[1]>0)
+        boxes = sorted(boxes, key=(lambda box:box[1]), reverse=d[1]>0)
     for box in boxes:
-        box.slide(grid, d)
+        wh.slide(box, d)
     return n
 
 def main():
     wh = read_input()
-    grid, robot, boxes = widen_grid(wh)
+    wide = widen_warehouse(wh)
     for d in wh.course:
-        advance(wh, d)
+        wh.robot = advance(wh, d)
     print(sum(p.gps() for p in wh.boxes))
-    for d in wh.course:
-        robot = advance_wide(grid, robot, d)
-    print(sum(p.pos.gps() for p in boxes))
+    for d in wide.course:
+        wide.robot = advance_wide(wide, d)
+    print(sum(p.gps() for p in wide.boxes))
 
 if __name__ == '__main__':
     main()
