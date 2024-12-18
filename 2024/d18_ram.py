@@ -53,12 +53,26 @@ def scan_grid(grid, target):
         score += 1
     return scores
 
-def find_blocker(grid, start, target, new_walls):
+def find_route(scores, start):
+    steps = [start]
+    score = scores[start]
+    while score:
+        pos = steps[-1]
+        nbrs = [pos+d for d in DIRS]
+        score = min(scores.get(n, score+1) for n in nbrs)
+        pos = next(n for n in nbrs if scores.get(n)==score)
+        steps.append(pos)
+    return steps
+
+def find_blocker(grid, route, start, target, new_walls):
     for wall in new_walls:
         grid.walls.add(wall)
+        if wall not in route:
+            continue
         scores = scan_grid(grid, target)
         if start not in scores:
             return wall
+        route = set(find_route(scores, start))
     return None
 
 def main():
@@ -75,7 +89,8 @@ def main():
     target = Point.at(wid-1, hei-1)
     scores = scan_grid(grid, target)
     print(scores[start])
-    print(find_blocker(grid, start, target, positions[falls:]))
+    route = set(find_route(scores, start))
+    print(find_blocker(grid, route, start, target, positions[falls:]))
 
 if __name__ == '__main__':
     main()
