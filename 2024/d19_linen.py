@@ -13,18 +13,31 @@ def combine(strings):
     return re.compile('(' + '|'.join(strings) + ')*')
 
 def simplify(towels):
-    towels.sort(key=len)
     out = []
-    for towel in towels:
+    for towel in sorted(towels, key=len):
         if not combine(out).fullmatch(towel):
             out.append(towel)
     return out
+
+def count_matches(towels, design, cache={'':1}):
+    v = cache.get(design)
+    if v is not None:
+        return v
+    c = 0
+    for i in range(1, len(design)+1):
+        if design[:i] in towels:
+            c += count_matches(towels, design[i:])
+    cache[design] = c
+    return c
 
 def main():
     towels, designs = read_input()
     simplified = simplify(towels)
     ptn = combine(simplified)
-    print(sum(ptn.fullmatch(design) is not None for design in designs))
+    matching_designs = list(filter(ptn.fullmatch, designs))
+    print(len(matching_designs))
+    towels = set(towels)
+    print(sum(count_matches(towels, design) for design in matching_designs))
 
 if __name__ == '__main__':
     main()
