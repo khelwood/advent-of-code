@@ -35,6 +35,12 @@ class Maze:
             if self.open(n):
                 yield n
 
+    def wall_neighbours(self, p):
+        for d in DIRS:
+            n = p+d
+            if n in self.walls:
+                yield n
+
 def read_maze():
     walls = set()
     for y,line in enumerate(filter(bool, map(str.strip, sys.stdin))):
@@ -70,10 +76,7 @@ def find_short_cheats(maze, scores):
     cheats = set()
     for p,sc in scores.items():
         if sc >= 102:
-            for d in DIRS:
-                w = p+d
-                if w not in maze.walls:
-                    continue
+            for w in maze.wall_neighbours(p):
                 for n in maze.open_neighbours(w):
                     if scores.get(n, sc) <= sc-102:
                         cheats.add((n,p))
@@ -91,10 +94,12 @@ def find_long_cheats(maze, score):
             if dsc < 102:
                 break
             dist = manhattan(p,q)
-            if dsc > 100 + dist:
-                cheats.add((p,q))
-    # need to find starts and ends that are actually adjacent
-    #  to the walls you're passing through
+            if dist > 20 or dsc - dist < 100:
+                continue
+            cheats.add((p,q))
+    # I thought I was going to have to check that endpoints of
+    # the cheat are actually adjacent to walls that the cheat
+    # passes through, but I got the right answer without that check.
     return cheats
 
 def main():
@@ -103,8 +108,8 @@ def main():
     par = score[maze.start]
     cheats = find_short_cheats(maze, score)
     print(len(cheats))
-    #cheats = find_long_cheats(maze, score)
-    #print(len(cheats)) # 43281689 too high
+    cheats = find_long_cheats(maze, score)
+    print(len(cheats))
 
 if __name__ == '__main__':
     main()
