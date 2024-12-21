@@ -69,19 +69,7 @@ def paths(p, cache={ORIGIN:((),)}):
 def path_str(path):
     return ''.join(DIR_CH[ch] for ch in path)
 
-def cost_dirpad(controller_costs):
-    costs = {}
-    valid_positions = set(DIRPAD.values())
-    for a,b in permutations(DIRPAD.values(), 2):
-        v = b-a
-        best_cost = 1000
-        for path in paths(v):
-            if path_valid(valid_positions, a, path):
-                cost = sum_cost(a, path, controller_costs)
-                if cost < best_cost:
-                    best_cost = cost
-        costs[a,b] = best_cost
-    return costs
+BIG = 1_000_000_000_000_000
 
 def cost_dirpad2():
     costs = {}
@@ -89,7 +77,7 @@ def cost_dirpad2():
     for va,vb in product(DIRPAD, repeat=2):
         a = DIRPAD[va]
         b = DIRPAD[vb]
-        best_cost = 100_000
+        best_cost = BIG
         for path in paths(b-a):
             cost = 0
             pos = a
@@ -113,7 +101,7 @@ def cost_dirpad1(master_costs):
     for va,vb in product(DIRPAD, repeat=2):
         a = DIRPAD[va]
         b = DIRPAD[vb]
-        best_cost = 100_000
+        best_cost = BIG
         for path in paths(b-a):
             cost = 0
             pos = a
@@ -139,7 +127,7 @@ def cost_numpad(master_costs):
     for va,vb in product(NUMPAD, repeat=2):
         a = NUMPAD[va]
         b = NUMPAD[vb]
-        best_cost = 100_000
+        best_cost = BIG
         for path in paths(b-a):
             cost = 0
             pos = a
@@ -167,23 +155,30 @@ def cost_code(costs, code):
         pos = ch
     return cost
 
-# pad2_costs[a,b] is the number of button presses on pad 3 required
-#  to push button b on pad 2, starting from position a
-pad2_costs = cost_dirpad2()
-# for a,b in pad2_costs:
-#     print(f'{DIR_CH[a]} -> {DIR_CH[b]} = {pad2_costs[a,b]}')
+def total_complexity(costs, codes):
+    total = 0
+    for code in codes:
+        cost = cost_code(costs, code)
+        total += int(code.rstrip('A')) * cost
+    return total
 
-pad1_costs = cost_dirpad1(pad2_costs)
-# print("\nPAD 1")
-# for a,b in pad1_costs:
-#     print(f'{DIR_CH[a]} -> {DIR_CH[b]} = {pad1_costs[a,b]}')
-numpad_costs = cost_numpad(pad1_costs)
-# print("\nNUMPAD")
-# for a,b in numpad_costs:
-#     print(f'{a} -> {b} = {numpad_costs[a,b]}')
+def part1(codes):
+    pad2_costs = cost_dirpad2()
+    pad1_costs = cost_dirpad1(pad2_costs)
+    numpad_costs = cost_numpad(pad1_costs)
+    print(total_complexity(numpad_costs, codes))
 
-total = 0
-for code in read_codes():
-    cost = cost_code(numpad_costs, code)
-    total += int(code.rstrip('A')) * cost
-print(total)
+def part2(codes):
+    costs = cost_dirpad2()
+    for _ in range(24):
+        costs = cost_dirpad1(costs)
+    costs = cost_numpad(costs)
+    print(total_complexity(costs, codes))
+
+def main():
+    codes = read_codes()
+    part1(codes)
+    part2(codes)
+
+if __name__=='__main__':
+    main()
