@@ -91,7 +91,7 @@ def total_complexity(costs, codes):
         total += int(code.rstrip('A')) * cost
     return total
 
-def pad_costs(codes, num_middle):
+def combined_costs(num_middle):
     costs = cost_pad(DIRPAD, SingularDict(1))
     for _ in range(num_middle):
         costs = cost_pad(DIRPAD, costs)
@@ -99,9 +99,9 @@ def pad_costs(codes, num_middle):
 
 def main():
     codes = read_codes()
-    costs = pad_costs(codes, 1)
+    costs = combined_costs(1)
     print(total_complexity(costs, codes))
-    costs = pad_costs(codes, 24)
+    costs = combined_costs(24)
     print(total_complexity(costs, codes))
     
 if __name__=='__main__':
