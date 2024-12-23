@@ -44,6 +44,8 @@ def find_largest_lan(links):
         cur_lans = new_lans
         new_lans = set()
         for lan in cur_lans:
+            if any(lan <= new_lan for new_lan in new_lans):
+                continue
             lan = expand_lan(lan, links)
             if lan:
                 new_lans.add(lan)
