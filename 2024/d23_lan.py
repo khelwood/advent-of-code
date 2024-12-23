@@ -22,30 +22,38 @@ def find_trios(links, pred=None):
                     trios.add(frozenset((a,b1,b2)))
     return trios
 
-def expand_lans(lans, links):
-    expanded = set()
-    for lan in lans:
-        a = next(iter(lan))
-        for b in links[a]:
-            bl = links[b]
-            if b not in lan and all(x==b or x in bl for x in lan):
-                expanded.add(lan|{b})
-    return expanded
+def expand_lan(lan, links):
+    expanded = False
+    a = next(iter(lan))
+    for b in links[a]:
+        if b not in lan and lan <= links[b]:
+            if not expanded:
+                expanded = True
+                lan = set(lan)
+            lan.add(b)
+    if expanded:
+        return frozenset(lan)
+    return None
 
-def find_largest_lans(links):
-    new_lans = find_trios(links)
+def find_largest_lan(links):
+    lans = find_trios(links)
+    all_lans = set()
+    new_lans = lans
     while new_lans:
-        lans = new_lans
-        new_lans = expand_lans(lans, links)
-    return lans
+        all_lans |= new_lans
+        cur_lans = new_lans
+        new_lans = set()
+        for lan in cur_lans:
+            lan = expand_lan(lan, links)
+            if lan:
+                new_lans.add(lan)
+    return max(all_lans, key=len)
 
 def main():
     links = read_links()
     trios = find_trios(links, lambda a:a.startswith('t'))
     print(len(trios))
-    lans = find_largest_lans(links)
-    assert len(lans)==1
-    lan, = lans
+    lan = find_largest_lan(links)
     print(','.join(sorted(lan)))
 
 if __name__ == '__main__':
