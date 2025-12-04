@@ -2,33 +2,24 @@
 
 import sys
 
-def count_adjacent(rolls, p):
-    px,py = p
-    c = 0
-    for x in (px-1,px+1):
-        for y in (py-1,py,py+1):
-            if (x,y) in rolls:
-                c += 1
-    if (px,py-1) in rolls:
-        c += 1
-    if (px,py+1) in rolls:
-        c += 1
-    return c
+DIRS = ((-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1, -1), (1, 0), (1, 1))
 
-def accessible(rolls, p):
-    return count_adjacent(rolls, p) < 4
+def adjacent(p):
+    x,y = p
+    for dx,dy in DIRS:
+        yield (x+dx, y+dy)
 
-def remove_count(rolls):
-    og_len = len(rolls)
-    while True:
-        removed = set()
-        for r in rolls:
-            if accessible(rolls, r):
-                removed.add(r)
-        if not removed:
-            break
-        rolls -= removed
-    return og_len - len(rolls)
+def remove_count(scores):
+    og_len = len(scores)
+    check = list(scores)
+    for r in check:
+        if 0 < scores[r] < 4:
+            scores[r] = 0
+            for a in adjacent(r):
+                if scores.get(a, 0) > 0:
+                    scores[a] -= 1
+                    check.append(a)
+    return og_len - sum(v > 0 for v in scores.values())
 
 def read_rolls():
     rolls = set()
@@ -36,12 +27,13 @@ def read_rolls():
         for x,ch in enumerate(line):
             if ch=='@':
                 rolls.add((x,y))
-    return rolls
+    scores = {r:sum(a in rolls for a in adjacent(r)) for r in rolls}
+    return scores
 
 def main():
-    rolls = read_rolls()
-    print(sum(accessible(rolls, p) for p in rolls))
-    print(remove_count(rolls))
+    scores = read_rolls()
+    print(sum((scores[p] < 4) for p in scores))
+    print(remove_count(scores))
 
 if __name__ == '__main__':
     main()
