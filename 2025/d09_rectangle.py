@@ -1,40 +1,26 @@
 #!/usr/bin/env python3
 
 import sys
+
 from itertools import combinations
-from typing import NamedTuple
 
 def between(v, a, b):
     return (a <= v <= b) if (a <= b) else (b <= v <= a)
 
-class Line(NamedTuple):
-    start: tuple
-    end: tuple
+def horizontal(line):
+    return line[0][1]==line[1][1]
 
-    @property
-    def x(self):
-        return self.start[0]
+def vertical(line):
+    return line[0][0]==line[1][0]
 
-    @property
-    def y(self):
-        return self.start[1]
-
-    @property
-    def horizontal(self):
-        return self.start[1]==self.end[1]
-
-    @property
-    def vertical(self):
-        return self.start[0]==self.end[0]
-
-    def crosses(self, other):
-        if self.horizontal:
-            return (other.vertical and between(other.x, self.start[0], self.end[0])
-                    and between(self.y, other.start[1], other.end[1]))
-        else:
-            return (other.horizontal and between(other.y, self.start[1], self.end[1])
-                    and between(self.x, other.start[0], other.end[0]))
-        return False
+def crosses(line1, line2):
+    if horizontal(line1):
+        return (vertical(line2) and between(line2[0][0], line1[0][0], line1[1][0])
+                and between(line1[0][1], line2[0][1], line2[1][1]))
+    else:
+        return (horizontal(line2) and between(line2[0][1], line1[0][1], line1[1][1])
+                and between(line1[0][0], line2[0][0], line2[1][0]))
+    return False
 
 def read_input():
     lines = filter(bool, map(str.strip, sys.stdin))
@@ -49,7 +35,7 @@ def find_edges(points):
     last = points[-1]
     edges = []
     for cur in points:
-        edges.append(Line(last, cur))
+        edges.append((last, cur))
         last = cur
     return edges
 
@@ -58,11 +44,12 @@ def rect_corners(a,c):
     d = (c[0],a[1])
     return (a,b,c,d)
 
-def main():
-    reds = read_input()
-    print(max(rect_area(a,b) for (a,b) in combinations(reds, 2)))
+def find_best_area(reds):
     edges = find_edges(reds)
+    edge_min = [tuple(min(pt[i] for pt in ln) for i in (0,1)) for ln in edges]
+    edge_max = [tuple(max(pt[i] for pt in ln) for i in (0,1)) for ln in edges]
     best = 0
+
     for a,b in combinations(reds, 2):
         if a[0]==b[0] or a[1]==b[1]:
             continue
@@ -75,17 +62,20 @@ def main():
         xmax = max(a[0],b[0])
         ymin = min(a[1],b[1])
         ymax = max(a[1],b[1])
-        for edge in edges:
-            emin = tuple(min(edge.start[i], edge.end[i]) for i in (0,1))
-            emax = tuple(max(edge.start[i], edge.end[i]) for i in (0,1))
-            if (emax[0] <= xmin or emin[0] >= xmax or emax[1] <= ymin or emin[1] >= ymax):
+        for (emnx, emny), (emxx, emxy), edge in zip(edge_min, edge_max, edges):
+            if (emxx <= xmin or emnx >= xmax or emxy <= ymin or emny >= ymax):
                 continue
-            if any(side.crosses(edge) for side in sides):
+            if any(crosses(side, edge) for side in sides):
                 good = False
                 break
         if good:
             best = area
-    print(best)
+    return best
+
+def main():
+    reds = read_input()
+    print(max(rect_area(a,b) for (a,b) in combinations(reds, 2)))
+    print(find_best_area(reds))
 
 if __name__ == '__main__':
     main()
