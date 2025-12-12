@@ -4,10 +4,9 @@ import sys
 
 from dataclasses import dataclass
 
+# A 3 by 3 block with some cells filled in
 @dataclass
 class Shape:
-    wid: int
-    hei: int
     cells: frozenset
 
 @dataclass
@@ -32,13 +31,11 @@ def parse_shape(line_iter):
     cells = set()
     for y,line in enumerate(line_iter):
         if not line:
-            hei = y
             break
-        wid = len(line)
         for x,ch in enumerate(line):
             if ch=='#':
                 cells.add((x,y))
-    return Shape(wid=wid, hei=hei, cells=frozenset(cells))
+    return Shape(cells=frozenset(cells))
 
 def read_input():
     line_iter = map(str.strip, sys.stdin)
@@ -53,12 +50,10 @@ def read_input():
     return shapes, regions
 
 def flip(shape):
-    x1 = shape.wid - 1
-    return Shape(shape.wid, shape.hei, frozenset((x1-x, y) for (x,y) in shape.cells))
+    return Shape(frozenset((2-x, y) for (x,y) in shape.cells))
 
 def rotate(shape):
-    y1 = shape.hei - 1
-    return Shape(shape.hei, shape.wid, frozenset((y1-y, x) for (x,y) in shape.cells))
+    return Shape(frozenset((2-y, x) for (x,y) in shape.cells))
 
 def make_shape_group(index, shape):
     group = ShapeGroup()
@@ -100,8 +95,8 @@ def fit_rec(wid, hei, filled, groups, *, _cache={}):
     group = groups[0]
     rest = groups[1:]
     for sh in group:
-        for x in range(wid+1-sh.wid):
-            for y in range(hei+1-sh.hei):
+        for x in range(wid-2):
+            for y in range(hei-2):
                 new = try_fit(sh, x, y, filled)
                 if new and fit_rec(wid, hei, new, rest):
                     _cache[key] = True
@@ -127,7 +122,8 @@ def try_fit(shape, x0, y0, filled, *, _cache={}):
 def plausible(r, groups):
     required_area = 0
     for group, n in zip(groups, r.presents):
-        required_area += n * group.volume
+        if n > 0:
+            required_area += n * group.volume
     return (required_area <= r.wid*r.hei)
 
 def easy(r):
