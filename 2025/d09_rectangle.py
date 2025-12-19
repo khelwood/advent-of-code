@@ -4,22 +4,15 @@ import sys
 
 from itertools import combinations
 
-def between(v, a, b):
-    return (a <= v <= b) if (a <= b) else (b <= v <= a)
-
-def horizontal(line):
-    return line[0][1]==line[1][1]
-
-def vertical(line):
-    return line[0][0]==line[1][0]
-
 def crosses(line1, line2):
-    if horizontal(line1):
-        return (vertical(line2) and between(line2[0][0], line1[0][0], line1[1][0])
-                and between(line1[0][1], line2[0][1], line2[1][1]))
+    ((minx1, miny1), (maxx1, maxy1)) = line1
+    ((minx2, miny2), (maxx2, maxy2)) = line2
+    if miny1==maxy1:
+        return (minx2==maxx2 and minx1 <= minx2 <= maxx1
+                and miny2 <= miny1 <= maxy2)
     else:
-        return (horizontal(line2) and between(line2[0][1], line1[0][1], line1[1][1])
-                and between(line1[0][0], line2[0][0], line2[1][0]))
+        return (miny2==maxy2 and miny1 <= miny1 <= maxy1
+                and minx2 <= minx1 <= maxx2)
     return False
 
 def read_input():
@@ -35,35 +28,44 @@ def find_edges(points):
     last = points[-1]
     edges = []
     for cur in points:
-        edges.append((last, cur))
+        x0,y0=cur
+        x1,y1=last
+        if x1 < x0:
+            x1,x0 = x0,x1
+        if y1 < y0:
+            y1,y0 = y0,y1
+        edges.append(((x0,y0),(x1,y1)))
         last = cur
     return edges
 
 def rect_corners(a,c):
-    b = (a[0],c[1])
-    d = (c[0],a[1])
+    ax,ay = a
+    cx,cy = c
+    b = (ax,cy)
+    d = (cx,ay)
     return (a,b,c,d)
 
 def find_best_area(reds):
     edges = find_edges(reds)
-    edge_min = [tuple(min(pt[i] for pt in ln) for i in (0,1)) for ln in edges]
-    edge_max = [tuple(max(pt[i] for pt in ln) for i in (0,1)) for ln in edges]
     best = 0
 
     for a,b in combinations(reds, 2):
-        if a[0]==b[0] or a[1]==b[1]:
+        ax,ay = a
+        bx,by = b
+        if ax==bx or ay==by:
             continue
         area = rect_area(a,b)
         if area <= best:
             continue
         good = True
         sides = find_edges(rect_corners(a,b))
-        xmin = min(a[0],b[0])
-        xmax = max(a[0],b[0])
-        ymin = min(a[1],b[1])
-        ymax = max(a[1],b[1])
-        for (emnx, emny), (emxx, emxy), edge in zip(edge_min, edge_max, edges):
-            if (emxx <= xmin or emnx >= xmax or emxy <= ymin or emny >= ymax):
+        if bx < ax:
+            ax,bx = bx,ax
+        if by < ay:
+            ay,by = by,ay
+        for edge in edges:
+            (eminx,eminy), (emaxx,emaxy) = edge
+            if (emaxx <= ax or eminx >= bx or emaxy <= ay or eminy >= by):
                 continue
             if any(crosses(side, edge) for side in sides):
                 good = False
